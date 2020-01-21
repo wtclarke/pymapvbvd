@@ -604,7 +604,7 @@ class twix_map_obj:
                         blockInit = np.concatenate((blockInit, blockInit),axis=2)
                     else:
                         # regression; reset size and lock it
-                        blockSz = np.maximum( blockSz/2, 1 )
+                        blockSz = np.maximum( blockSz/2, 1 ).astype(int)
                         blockInit = blockInit[:,:,:blockSz]
                         doLockblockSz = True
                     

@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass,field
-from read_twix_hdr import read_twix_hdr
-from twix_map_obj import twix_map_obj
+from mapVBVD.read_twix_hdr import read_twix_hdr
+from mapVBVD.twix_map_obj import twix_map_obj
 
 def bitget(number, pos):
     return (number >> pos) & 1
