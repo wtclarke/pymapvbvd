@@ -333,7 +333,7 @@ class twix_map_obj:
     #Replicate matlab subscripting
     # Overloads [] 
     def __getitem__(self, key=None):
-        print(f'In [], key is {key}.')
+        #print(f'In [], key is {key}.')
         #import pdb; pdb.set_trace()
         if isinstance(key, slice): # Handle single input e.g. [:]
             key = (key,) # make an iterable for calcRange

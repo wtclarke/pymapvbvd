@@ -1,3 +1,4 @@
 __*
 .ipynb_checkpoints
 *.ipynb
+*.code-workspace
