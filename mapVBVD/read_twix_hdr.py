@@ -1,12 +1,13 @@
 import re
 import numpy as np
+from itertools import chain
 
 def parse_ascconv(buffer):
     #print(buffer)
     vararray = re.finditer(r'(?P<name>\S*)\s*=\s*(?P<value>\S*)\n',buffer)
     #print(vararray)
     mrprot ={}
-    for v in vararray:
+    for v in vararray:        
         try:
             value = float(v.group('value'))
         except ValueError:
@@ -30,16 +31,16 @@ def parse_ascconv(buffer):
 def parse_xprot(buffer):
     xprot = {}
     tokens = re.finditer(r'<Param(?:Bool|Long|String)\."(\w+)">\s*{([^}]*)',buffer)
-    
-    for t in tokens:
+    tokensDouble = re.finditer(r'<ParamDouble\."(\w+)">\s*{\s*(<Precision>\s*[0-9]*)?\s*([^}]*)',buffer)
+    alltokens = chain(tokens,tokensDouble)
+    #import pdb; pdb.set_trace()
+    for t in alltokens:
         #print(t.group(1))
         #print(t.group(2))
         name = t.group(1)
         
-        value = re.sub(r'("*)|( *<\w*> *[^\n]*)','',t.group(2))
-        value.strip()
-        value = re.sub(r'\s*',' ',value)
-
+        value = re.sub(r'("*)|( *<\w*> *[^\n]*)','',t.groups()[-1])
+        value = re.sub(r'[\t\n\r\f\v]*','',value.strip()) #value = re.sub(r'\s*',' ',value) for some bonkers reason this inserts whitespace between all the letters! Just look for other whitespace that \s usually does.        
         try:
             value = float(value)
         except ValueError:
