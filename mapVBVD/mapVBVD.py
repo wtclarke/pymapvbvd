@@ -74,7 +74,7 @@ def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength):
 #         evalMDH() contains the correct and readable code for all mdh entries.
         try:
             #read everything and cut out the mdh
-            data_u8 = np.fromfile(fid, dtype=np.uint8, count=ulDMALength)
+            data_u8 = np.fromfile(fid, dtype=np.uint8, count=int(ulDMALength))
             data_u8 = data_u8[mdhStart:]
         except EOFError:
             import warnings
@@ -164,7 +164,7 @@ def evalMDH( mdh_blob, version ):
     
     if version == 'vd':
         isVD = True
-        mdh_blob = np.concat((mdh_blob[0:19,:],mdh_blob[40:,:]),axis=0) #remove 20 unnecessary bytes
+        mdh_blob = np.concatenate((mdh_blob[0:20,:],mdh_blob[40:,:]),axis=0) #remove 20 unnecessary bytes
     else:
         isVD = False
     
@@ -257,11 +257,11 @@ def mapVBVD(filename):
         version = 'vd'
         print('Software version: VD')
         
-        NScans = secondInt
+        NScans = secondInt[0]
         measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
         fileID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
-        measOffset = np.zeros(NScans)
-        measLength = np.zeros(NScans)
+        measOffset = np.zeros(NScans, dtype=np.uint64)
+        measLength = np.zeros(NScans, dtype=np.uint64)
         for k in range(NScans):
             measOffset[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0)
             measLength[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0)
