@@ -1,6 +1,66 @@
 import re
 import numpy as np
 from itertools import chain
+from attrdict import AttrDict
+
+class twix_hdr(AttrDict):
+    def __init__(self,*args):
+        super().__init__(*args)
+
+    @staticmethod
+    def search_using_tuple(s_terms,key,regex=True):
+        if regex:
+
+            def regex_tuple(pattern,key_tuple):
+                inner_out = []
+                re_comp = re.compile(pattern,re.IGNORECASE)
+                for k in key_tuple:
+                    m = re_comp.search(k)
+                    if m:
+                        inner_out.append(True)
+                    else:
+                        inner_out.append(False)
+                return any(inner_out)
+
+            out = []
+            for st in s_terms:
+                out.append(regex_tuple(st,key))
+            return all(out)  
+        else:
+            return all([st in key for st in s_terms])
+
+    def search_for_keys(self,search_terms,top_lvl=None,print_flag=True,regex=True):
+        """Search header keys for terms.
+
+            Args:
+                search terms        : search terms as list of strings.
+                recursive (optional): Search using regex or for exact strings.
+                top_lvl (optional)  : Specify list of parameter sets to search (e.g. YAPS)
+                print_flag(optional): If False no output will be printed.
+        """  
+        
+        if top_lvl is None:
+            top_lvl = self.keys()
+        elif isinstance(top_lvl,str):
+            top_lvl = [top_lvl,]
+        
+        out = {}
+        for key in top_lvl:
+            matching_keys = []
+            list_of_keys = self[key].keys()
+            for sub_key in list_of_keys:
+                if twix_hdr.search_using_tuple(search_terms,sub_key,regex=regex):
+                    matching_keys.append(sub_key)
+
+            if print_flag:
+                print(f'{key}:')
+                for mk in matching_keys:
+                    print(f'\t{mk}: {self[key][mk]}')
+            
+            out.update({key:matching_keys})
+
+        return out
+
 
 def parse_ascconv(buffer):
     #print(buffer)
@@ -33,7 +93,7 @@ def parse_xprot(buffer):
     tokens = re.finditer(r'<Param(?:Bool|Long|String)\."(\w+)">\s*{([^}]*)',buffer)
     tokensDouble = re.finditer(r'<ParamDouble\."(\w+)">\s*{\s*(<Precision>\s*[0-9]*)?\s*([^}]*)',buffer)
     alltokens = chain(tokens,tokensDouble)
-    #import pdb; pdb.set_trace()
+    
     for t in alltokens:
         #print(t.group(1))
         #print(t.group(2))
@@ -92,5 +152,5 @@ def read_twix_hdr(fid):
         buffer = re.sub(r'\n\s*\n', '', buffer)
         
         prot.update({bufname:parse_buffer(buffer)})
-        
-    return prot
+    
+    return twix_hdr(prot)

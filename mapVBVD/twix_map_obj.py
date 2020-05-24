@@ -95,7 +95,35 @@ class twix_map_obj:
 
         # Flags
         self.flagAverageDim = np.full(16,False,dtype=np.bool)
-        
+
+    def __str__(self):
+        des_str = ('***twix_map_obj***\n'
+                    f'File: {self.filename}\n'
+                    f'Software: {self.softwareVersion}\n'
+                    f'Number of acquisitions read {self.NAcq}\n'
+                    f'Data size is {np.array2string(self.fullSize,formatter={"float":lambda x: "%.0f" % x},separator=",")}\n'
+                    f'Squeezed data size is {np.array2string(self.sqzSize(),formatter={"int":lambda x: "%i" % x},separator=",")} ({self.sqzDims()})\n'
+                    f'NCol = {self.NCol:0.0f}\n'
+                    f'NCha = {self.NCha:0.0f}\n'
+                    f'NLin  = {self.NLin:0.0f}\n'
+                    f'NAve  = {self.NAve:0.0f}\n'
+                    f'NSli  = {self.NSli:0.0f}\n'
+                    f'NPar  = {self.NPar:0.0f}\n'
+                    f'NEco  = {self.NEco:0.0f}\n'
+                    f'NPhs  = {self.NPhs:0.0f}\n'
+                    f'NRep  = {self.NRep:0.0f}\n'
+                    f'NSet  = {self.NSet:0.0f}\n'
+                    f'NSeg  = {self.NSeg:0.0f}\n'
+                    f'NIda  = {self.NIda:0.0f}\n'
+                    f'NIdb  = {self.NIdb:0.0f}\n'
+                    f'NIdc  = {self.NIdc:0.0f}\n'
+                    f'NIdd  = {self.NIdd:0.0f}\n'
+                    f'NIde  = {self.NIde:0.0f}')
+        return des_str
+
+    def __repr__(self):
+        return str(self)
+
     def readMDH(self, mdh, filePos,useScan ):
 #         % extract all values in all MDHs at once
 #         %
@@ -285,7 +313,7 @@ class twix_map_obj:
                 outSize[k] = selRange[cDim].size
 
             for r,s in zip(selRange,self.dataSize()):
-                if max(r) > s:
+                if np.max(r) > s:
                     raise Exception('selection out of range')
             # To implement indexing
 
@@ -437,23 +465,22 @@ class twix_map_obj:
 
     def readData(self,mem,cIxToTarg=None,cIxToRaw=None,selRange=None,selRangeSz=None,outSize=None):
         mem = mem.astype(int)
-        #print(f'In readData. mem = {mem}')
-        #import pdb; pdb.set_trace()
+        
         if outSize is None:
             if selRange is None:
-                selRange = [slice(None,None,None),slice(None,None,None)]
+                selRange = [np.arange(0,self.dataSize()[0]).astype(int),np.arange(0,self.dataSize()[1]).astype(int)]#[slice(None,None,None),slice(None,None,None)]
             else:
-                selRange[0] = slice(None,None,None)
-                selRange[1] = slice(None,None,None)
+                selRange[0] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
+                selRange[1] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
             outSize = np.concatenate((self.dataSize()[0:2],mem.shape)).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0,selRangeSz[2])
             cIxToRaw  = cIxToTarg
-        else:
-            if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
-                selRange[0] = slice(None,None,None)
-            if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
-                selRange[1] = slice(None,None,None)          
+        # else:
+        #     if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
+        #         selRange[0] = slice(None,None,None)
+        #     if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
+        #         selRange[1] = slice(None,None,None)          
 
         out = np.zeros(outSize,dtype = np.csingle)
         out= out.reshape( (selRangeSz[0], selRangeSz[1],-1))
@@ -552,18 +579,22 @@ class twix_map_obj:
                 
                 #import pdb; pdb.set_trace() 
 
-                if (selRange[0]!=slice(None,None,None)) | (selRange[1]!=slice(None,None,None)):
-                    if selRange[0]==slice(None,None,None):
-                        cur1stDim = block.shape[0]
-                    else:
-                        cur1stDim = selRange[0].size
-                    if selRange[1]==slice(None,None,None):
-                        cur2ndDim = block.shape[1]
-                    else:
-                        cur2ndDim = selRange[0].size
-                    cur3rdDim = block.shape[2]
-                    block = block[ selRange[0], selRange[1], :].reshape((cur1stDim,cur2ndDim,cur3rdDim)) # Force keeping 3rd dim               
-                              
+                # WTC whilst still using slices rather than just arrays.
+                # if (not isinstance(selRange[0],slice)) or (not isinstance(selRange[1],slice)):
+                # if isinstance(selRange[0],slice) and (selRange[0]==slice(None,None,None)):
+                #     cur1stDim = block.shape[0]
+                # else:
+                #     cur1stDim = selRange[0].size
+                # if isinstance(selRange[1],slice) and (selRange[1]==slice(None,None,None)):
+                #     cur2ndDim = block.shape[1]
+                # else:
+                #     cur2ndDim = selRange[1].size
+
+                cur1stDim = selRange[0].size
+                cur2ndDim = selRange[1].size
+                cur3rdDim = block.shape[2]
+                block = block[selRange[0][:,np.newaxis],selRange[1][np.newaxis,:], :].reshape((cur1stDim,cur2ndDim,cur3rdDim))
+
                 toSort = cIxToTarg[ix]
                 I = np.argsort(toSort)
                 sortIdx = toSort[I]
@@ -632,5 +663,8 @@ class twix_map_obj:
             out /= count_ave        
 
         out = np.ascontiguousarray(out.reshape(outSize))          
+
+        if self.squeeze:
+            out = np.squeeze(out)
 
         return out

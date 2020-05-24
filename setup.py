@@ -7,11 +7,11 @@ with open('requirements.txt', 'rt') as f:
 
 
 setup(name='pyMapVBVD',
-      version='0.1.0',
+      version='0.2.0',
       description='Python twix reader',
       author=['Will Clarke'],
       author_email=['william.clarke@ndcn.ox.ac.uk'],
-      url='www.fmrib.ox.ac.uk/fsl',
+      url='https://github.com/wexeee/pymapvbvd',
       packages=['mapVBVD'],
       install_requires=install_requires         
      )

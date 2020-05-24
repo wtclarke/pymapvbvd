@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass,field
 from mapVBVD.read_twix_hdr import read_twix_hdr
 from mapVBVD.twix_map_obj import twix_map_obj
+from attrdict import AttrDict,AttrMap,AttrDefault
 
 def bitget(number, pos):
     return (number >> pos) & 1
@@ -243,6 +244,7 @@ def evalMDH( mdh_blob, version ):
     
     return mdh,mask
 
+
 def mapVBVD(filename):
     fid = open(filename,'rb')
 
@@ -445,11 +447,52 @@ def mapVBVD(filename):
                 if keys != 'hdr':
                     currTwixObj[keys].clean()
         
-        twix_obj.append(currTwixObj)
+        twix_obj.append(myAttrDict(currTwixObj))
         
     fid.close()
 
     if len(twix_obj) == 1:
         twix_obj = twix_obj[0]
+    # breakpoint()
+    return twix_obj 
 
-    return twix_obj
+# Add some class methods to AttrDict so that we get around the issue of not being able to
+# access methods of objects accessed as attributes.
+class myAttrDict(AttrDict):
+    def __init__(self,*args):
+        super().__init__(*args)
+
+    def search_header_for_keys(self,*args,**kwargs):
+        """Search header keys for terms.
+
+            Accesses search_for_keys method in header.
+            Args:
+                search terms        : search terms as list of strings.
+                regex (optional)    : Search using regex or for exact strings.
+                top_lvl (optional)  : Specify list of parameter sets to search (e.g. YAPS)
+                print_flag(optional): If False no output will be printed.
+        """  
+        return self['hdr'].search_for_keys(*args,**kwargs)
+
+    def search_header_for_val(self,top_lvl,keys,**kwargs):
+        """Return values for keys found using search terms for terms.
+
+            Args:
+                top_lvl         : Specify list of parameter sets to search (e.g. YAPS)
+                keys            : search terms as list of strings.
+                regex (optional): Search using regex or for exact strings.
+        """  
+        keys = self['hdr'].search_for_keys(keys,print_flag=False,top_lvl=top_lvl,**kwargs)
+
+        out_vals = []
+        for key in keys:
+            for skey in keys[key]:
+                out_vals.append(self['hdr'][key][skey])
+
+        return out_vals
+
+    def MDH_flags(self):
+        """Return list of populated MDH flags."""
+        MDH = list(self.keys())
+        MDH.pop(MDH.index('hdr'))
+        return MDH
