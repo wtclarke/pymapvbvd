@@ -2,3 +2,6 @@ __*
 .ipynb_checkpoints
 *.ipynb
 *.code-workspace
+build
+dist
+*.egg-info
