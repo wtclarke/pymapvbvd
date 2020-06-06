@@ -1,3 +1,8 @@
+# pyMapVBVD
+
+![PyPI](https://img.shields.io/pypi/v/pyMapVBVD)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyMapVBVD)
+
 Python port of the Matlab mapVBVD tool for reading Siemens raw data 'twix' (.dat) files.
 
 ## Use
