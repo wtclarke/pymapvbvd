@@ -1,9 +1,9 @@
 import numpy as np
 from dataclasses import dataclass,field
+import mapVBVD as pkg
 from mapVBVD.read_twix_hdr import read_twix_hdr
 from mapVBVD.twix_map_obj import twix_map_obj
-from attrdict import AttrDict,AttrMap,AttrDefault
-import pkg_resources  # part of setuptools
+from attrdict import AttrDict,AttrMap,AttrDefault\
 
 def bitget(number, pos):
     return (number >> pos) & 1
@@ -251,7 +251,7 @@ def evalMDH( mdh_blob, version ):
 def mapVBVD(filename,quiet=False):
 
     if not quiet:
-        print(f'pymapVBVD version {pkg_resources.require("pymapvbvd")[0].version}')
+        print(f'pymapVBVD version {pkg.__version__}')
 
     fid = open(filename,'rb')
 
