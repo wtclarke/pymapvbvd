@@ -1,1 +1,2 @@
-include requirements.txt
+include requirements.txtinclude versioneer.py
+include mapVBVD/_version.py

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import setuptools
+import versioneer
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -10,7 +11,8 @@ with open('requirements.txt', 'rt') as f:
 
 
 setuptools.setup(name='pyMapVBVD',
-        version='0.2.1',
+        version=versioneer.get_version(),
+        cmdclass=versioneer.get_cmdclass(),
         description='Python twix file reader',
         author='Will Clarke',
         author_email='william.clarke@ndcn.ox.ac.uk',
