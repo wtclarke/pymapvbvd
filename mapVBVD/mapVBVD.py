@@ -3,6 +3,7 @@ from dataclasses import dataclass,field
 from mapVBVD.read_twix_hdr import read_twix_hdr
 from mapVBVD.twix_map_obj import twix_map_obj
 from attrdict import AttrDict,AttrMap,AttrDefault
+import pkg_resources  # part of setuptools
 
 def bitget(number, pos):
     return (number >> pos) & 1
@@ -16,7 +17,7 @@ def set_bit(v, index, x):
     return v            # Return the result, we're done.
 
 
-def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength):
+def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength,print_prog=True):
     
     if version == 'vb':
         isVD = False
@@ -143,7 +144,8 @@ def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength):
             last_progress = progress
             elapsed_time  = time.time()-start
             time_left     = elapsed_time * (1/progress-1)
-            print(f'{np.round(100*progress):.2f} % read in {elapsed_time:.2f} s;\nestimated time left: {time_left:.2f} s\n')
+            if print_prog:
+                print(f'{np.round(100*progress):.2f}% read in {elapsed_time:0.2f} s. Estimated time left: {time_left:0.2f} s.',end='\r')
         
         cPos = cPos + ulDMALength
     
@@ -157,7 +159,8 @@ def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength):
     filePos  = filePos[0:n_acq+1] # in matlab was converted to row vector
     
     elapsed_time  = time.time()-start
-    print(f'{measLength/1024**2:8.1f}MB read in {elapsed_time:4.0f} s\n')
+    if print_prog:
+        print(f'\n{measLength/1024**2:8.1f}MB read in {elapsed_time:4.0f} s\n')
 
     return mdh_blob, filePos, isEOF
 
@@ -245,7 +248,11 @@ def evalMDH( mdh_blob, version ):
     return mdh,mask
 
 
-def mapVBVD(filename):
+def mapVBVD(filename,quiet=False):
+
+    if not quiet:
+        print(f'pymapVBVD version {pkg_resources.require("pymapvbvd")[0].version}')
+
     fid = open(filename,'rb')
 
     fid.seek(0,2)
@@ -257,7 +264,8 @@ def mapVBVD(filename):
 
     if (firstInt < 10000)&(secondInt <= 64):
         version = 'vd'
-        print('Software version: VD')
+        if not quiet:
+            print('Software version: VD')
         
         NScans = secondInt[0]
         measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
@@ -271,7 +279,8 @@ def mapVBVD(filename):
         
     else:
         version  = 'vb'
-        print('Software version: VB')
+        if not quiet:
+            print('Software version: VB')
         
         measOffset = np.zeros(1,dtype=np.uint64)
         measLength = np.array([fileSize],dtype=np.uint64)
@@ -280,7 +289,7 @@ def mapVBVD(filename):
     # Read data correction factors
     # to do for VB
     if version == 'vb':
-        print('TODO')
+        pass
 
     # data will be read in two steps (two while loops):
     #   1) reading all MDHs to find maximum line no., partition no.,... for
@@ -313,19 +322,16 @@ def mapVBVD(filename):
         currTwixObj.update({'refscan_phasestab_ref1': mytmo('refscan_phasestab_ref1')})
         currTwixObj.update({'rtfeedback': mytmo('rtfeedback')})
         currTwixObj.update({'vop': mytmo('vop')})
-        
-        if s==0:
-            #print(f'Reader version: {currTwixObj['image'].readerVersion})
-            print('UTC: TODO')
+            
             
         # jump to first mdh
         cPos += hdr_len
-        print(cPos[0])
         fid.seek(cPos[0],0)
         
-        print(f'Scan {s+1}/{NScans}, read all mdhs:')
+        if not quiet:
+            print(f'Scan {s+1}/{NScans}, read all mdhs:')
         
-        mdh_blob, filePos, isEOF = loop_mdh_read( fid, version, NScans, s, measOffset[s], measLength[s])  # uint8; size: [ byteMDH  Nmeas ]
+        mdh_blob, filePos, isEOF = loop_mdh_read( fid, version, NScans, s, measOffset[s], measLength[s],print_prog= not quiet)  # uint8; size: [ byteMDH  Nmeas ]
         
         cPos = filePos[-1]
         filePos = filePos[:-1]

@@ -10,7 +10,7 @@ with open('requirements.txt', 'rt') as f:
 
 
 setuptools.setup(name='pyMapVBVD',
-        version='0.2.0',
+        version='0.2.1',
         description='Python twix file reader',
         author='Will Clarke',
         author_email='william.clarke@ndcn.ox.ac.uk',
@@ -19,6 +19,7 @@ setuptools.setup(name='pyMapVBVD',
         long_description_content_type="text/markdown",
         packages=setuptools.find_packages(),
         install_requires=install_requires,
+        license_file='LICENSE',
         classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
