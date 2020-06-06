@@ -1,2 +1,3 @@
 include requirements.txtinclude versioneer.py
 include mapVBVD/_version.py
+include LICENSE
