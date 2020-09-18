@@ -515,7 +515,7 @@ class twix_map_obj:
 
         fid = self._fileopen()
 
-        for k in trange(kMax, desc='read data', leave=False):  # could loop over mem, but keep it similar to matlab
+        for k in trange(kMax, desc='read data', leave=True):  # could loop over mem, but keep it similar to matlab
             # skip scan header
             fid.seek(mem[k] + szScanHeader, 0)
             raw = np.fromfile(fid, dtype=np.float32, count=readSize.prod()).reshape(
@@ -566,12 +566,17 @@ class twix_map_obj:
 
                 # import pdb; pdb.set_trace()
 
-                if (selRange[0] != slice(None, None, None)) or (selRange[1] != slice(None, None, None)):
-                    if selRange[0] == slice(None, None, None):
+                if (selRange[0] != slice(None, None, None) if isinstance(selRange[0], slice)
+                else selRange[0].any() != slice(None, None, None)) or \
+                        (selRange[1] != slice(None, None, None) if isinstance(selRange[1], slice)
+                        else selRange[1].any() != slice(None, None, None)):
+                    if (selRange[0] == slice(None, None, None) if isinstance(selRange[0], slice)
+                    else False):
                         cur1stDim = block.shape[0]
                     else:
                         cur1stDim = selRange[0].size
-                    if selRange[1] == slice(None, None, None):
+                    if (selRange[1] == slice(None, None, None) if isinstance(selRange[1], slice)
+                    else False):
                         cur2ndDim = block.shape[1]
                     else:
                         cur2ndDim = selRange[0].size
