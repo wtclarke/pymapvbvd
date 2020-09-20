@@ -253,15 +253,19 @@ def evalMDH(mdh_blob, version):
 def mapVBVD(filename, **kwargs):
 
     # parse kw arguments
-    bReadImaScan = kwargs.pop('bReadImaScan', True)
-    bReadNoiseScan = kwargs.pop('bReadNoiseScan', True)
-    bReadPCScan = kwargs.pop('bReadPCScan', True)
-    bReadRefScan = kwargs.pop('bReadRefScan', True)
-    bReadRefPCScan = kwargs.pop('bReadRefPCScan', True)
-    bReadRTfeedback = kwargs.pop('bReadRTfeedback', True)
-    bReadPhaseStab = kwargs.pop('bReadPhaseStab', True)
-    bReadHeader = kwargs.pop('bReadHeader', True)
-    bIgnoreROoffcenter = kwargs.pop('bIgnoreROoffcenter', False)
+    bReadImaScan = kwargs.get('bReadImaScan', True)
+    bReadNoiseScan = kwargs.get('bReadNoiseScan', True)
+    bReadPCScan = kwargs.get('bReadPCScan', True)
+    bReadRefScan = kwargs.get('bReadRefScan', True)
+    bReadRefPCScan = kwargs.get('bReadRefPCScan', True)
+    bReadRTfeedback = kwargs.get('bReadRTfeedback', True)
+    bReadPhaseStab = kwargs.get('bReadPhaseStab', True)
+    bReadHeader = kwargs.get('bReadHeader', True)
+
+    ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
+    removeOS = kwargs.get('removeOS', True)
+    squeeze = kwargs.get('squeeze', False)
+    regrid = kwargs.get('regrid', False)
 
     # TODO: handle filename input variations
     fid = open(filename, 'rb')
@@ -321,7 +325,9 @@ def mapVBVD(filename, **kwargs):
         currTwixObj.update({'hdr': currTwixObjHdr})
 
         # declare data objects:
-        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj)
+        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj,
+                                           removeOS=removeOS,
+                                           squeeze=squeeze)
         currTwixObj.update({'image': mytmo('image')})
         currTwixObj.update({'noise': mytmo('noise')})
         currTwixObj.update({'phasecor': mytmo('phasecor')})

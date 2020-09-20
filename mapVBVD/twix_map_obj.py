@@ -4,9 +4,95 @@ import copy
 import time
 from tqdm import tqdm, trange
 
-
 class twix_map_obj:
-    def __init__(self, dataType, fname, version, rstraj):
+
+    @property
+    def dataSize(self):
+        out = self.fullSize
+        if out is None:
+            self.clean()
+            out = self.fullSize
+        # Not yet implemented
+        if self.removeOS:
+            ix = self.dataDims.index('Col')
+            out[ix] = self.NCol / 2
+
+        if self.flagAverageDim[0] | self.flagAverageDim[1]:
+            print('averaging in col and cha dim not supported, resetting flag')
+            self.flagAverageDim[0:2] = False
+
+        out[self.flagAverageDim] = 1
+        return out
+
+    @property
+    def sqzSize(self):
+        return self.dataSize[self.dataSize > 1].astype(int)
+
+    @property
+    def sqzDims(self):
+        out = []
+        squeezedDim = self.dataSize > 1
+        for sd, dim in zip(squeezedDim, self.dataDims):
+            if sd:
+                out.append(dim)
+        return out
+
+    @property
+    def flagRemoveOS(self):
+        return self.removeOS
+
+    @flagRemoveOS.setter
+    def flagRemoveOS(self, removeOS):
+        self.removeOS = removeOS
+
+    @property
+    def flagDoAverage(self):
+        ix = self.dataDims.index('Ave')
+        return self.flagAverageDim[ix]
+
+    @flagDoAverage.setter
+    def flagDoAverage(self, bval):
+        ix = self.dataDims.index('Ave')
+        self.flagAverageDim[ix] = bval
+
+    @property
+    def flagAverageReps(self):
+        ix = self.dataDims.index('Rep')
+        return self.flagAverageDim[ix]
+
+    @flagAverageReps.setter
+    def flagAverageReps(self, bval):
+        ix = self.dataDims.index('Rep')
+        self.flagAverageDim[ix] = bval
+
+    @property
+    def flagAverageSets(self):
+        ix = self.dataDims.index('Set')
+        return self.flagAverageDim[ix]
+
+    @flagAverageSets.setter
+    def flagAverageSets(self, bval):
+        ix = self.dataDims.index('Set')
+        self.flagAverageDim[ix] = bval
+
+    @property
+    def flagIgnoreSeg(self):
+        ix = self.dataDims.index('Seg')
+        return self.flagAverageDim[ix]
+
+    @flagIgnoreSeg.setter
+    def flagIgnoreSeg(self, bval):
+        ix = self.dataDims.index('Seg')
+        self.flagAverageDim[ix] = bval
+
+    # TODO: flagSkipToFirstLine, flagRampSampRegrid, flagDoRawDataCorrect, RawDataCorrectionFactors
+
+    def __init__(self, dataType, fname, version, rstraj, **kwargs):
+        self.ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
+        self.removeOS = kwargs.get('removeOS', False)
+        self.regrid = kwargs.get('regrid', False)
+        self.squeeze = kwargs.get('squeeze', False)
+
         self.dataType = dataType.lower()
         self.filename = fname
         self.softwareVersion = version
@@ -92,8 +178,6 @@ class twix_map_obj:
         self.skipLin = None
         self.skipPar = None
         self.fullSize = None
-
-        self.squeeze = False
 
         # Flags
         self.flagAverageDim = np.full(16, False, dtype=np.bool)
@@ -218,47 +302,19 @@ class twix_map_obj:
         # we need to cut MDHs from fread data
         self.freadInfo.cut = self.freadInfo.szChannelHeader / 8 + np.arange(self.NCol)
 
-    def dataSize(self):
-        out = self.fullSize
-        if out is None:
-            self.clean()
-            out = self.fullSize
-        # Not yet implemented
-        # if this.arg.removeOS:
-        #     ix = ismember(this.dataDims, 'Col');
-        #     out(ix) = this.NCol/2;
-
-        if self.flagAverageDim[0] | self.flagAverageDim[1]:
-            print('averaging in col and cha dim not supported, resetting flag')
-            self.flagAverageDim[0:2] = False
-
-        out[self.flagAverageDim] = 1
-        return out
-
-    def sqzSize(self):
-        return self.dataSize()[self.dataSize() > 1].astype(int)
-
-    def sqzDims(self):
-        out = []
-        squeezedDim = self.dataSize() > 1
-        for sd, dim in zip(squeezedDim, self.dataDims):
-            if sd:
-                out.append(dim)
-        return out
-
     def calcRange(self, S, bSqueeze):
 
-        selRange = [np.zeros(1, dtype=int)] * self.dataSize().size
-        outSize = np.ones(self.dataSize().shape, dtype=int)
+        selRange = [np.zeros(1, dtype=int)] * self.dataSize.size
+        outSize = np.ones(self.dataSize.shape, dtype=int)
 
         if S is None or S is slice(None, None, None):
             # shortcut to select all data
-            for k in range(0, self.dataSize().size):
-                selRange[k] = np.arange(0, self.dataSize()[k]).astype(int)
+            for k in range(0, self.dataSize.size):
+                selRange[k] = np.arange(0, self.dataSize[k]).astype(int)
             if not bSqueeze:
-                outSize = self.dataSize().astype(int)
+                outSize = self.dataSize.astype(int)
             else:
-                outSize = self.sqzSize()
+                outSize = self.sqzSize
         else:
             # import pdb; pdb.set_trace()
             for k, s in enumerate(S):
@@ -268,31 +324,31 @@ class twix_map_obj:
                     # we need to rearrange selRange from squeezed
                     # to original order                    
                     for i, x in enumerate(self.dataDims):
-                        if x == self.sqzDims()[k]:
+                        if x == self.sqzDims[k]:
                             cDim = i
 
                 if s == slice(None, None, None):
                     if k < (len(S) - 1):
-                        selRange[cDim] = np.arange(0, self.dataSize()[cDim]).astype(int)
+                        selRange[cDim] = np.arange(0, self.dataSize[cDim]).astype(int)
                     else:  # all later dimensions selected and 'vectorized'!
-                        for l in range(cDim, self.dataSize().size):
-                            selRange[l] = np.arange(0, self.dataSize()[l]).astype(int)
-                        outSize[k] = np.prod(self.dataSize()[cDim:])
+                        for l in range(cDim, self.dataSize.size):
+                            selRange[l] = np.arange(0, self.dataSize[l]).astype(int)
+                        outSize[k] = np.prod(self.dataSize[cDim:])
                         break
                 elif isinstance(s, slice):
-                    tmpTuple = s.indices(self.dataSize()[cDim].astype(int))
+                    tmpTuple = s.indices(self.dataSize[cDim].astype(int))
                     selRange[cDim] = np.arange(tmpTuple[0], tmpTuple[1], tmpTuple[2])
                 else:  # numeric
                     selRange[cDim] = np.array([s])
 
                 outSize[k] = selRange[cDim].size
 
-            for r, s in zip(selRange, self.dataSize()):
+            for r, s in zip(selRange, self.dataSize):
                 if max(r) > s:
                     raise Exception('selection out of range')
             # To implement indexing
 
-        selRangeSz = np.ones(self.dataSize().shape, dtype=int)
+        selRangeSz = np.ones(self.dataSize.shape, dtype=int)
         for idx, k in enumerate(selRange):
             selRangeSz[idx] = k.size
 
@@ -459,14 +515,14 @@ class twix_map_obj:
             else:
                 selRange[0] = slice(None, None, None)
                 selRange[1] = slice(None, None, None)
-            outSize = np.concatenate((self.dataSize()[0:2], mem.shape)).astype(int)
+            outSize = np.concatenate((self.dataSize[0:2], mem.shape)).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0, selRangeSz[2])
             cIxToRaw = cIxToTarg
         else:
-            if np.array_equiv(selRange[0], np.arange(0, self.dataSize()[0]).astype(int)):
+            if np.array_equiv(selRange[0], np.arange(0, self.dataSize[0]).astype(int)):
                 selRange[0] = slice(None, None, None)
-            if np.array_equiv(selRange[1], np.arange(0, self.dataSize()[1]).astype(int)):
+            if np.array_equiv(selRange[1], np.arange(0, self.dataSize[1]).astype(int)):
                 selRange[1] = slice(None, None, None)
 
         out = np.zeros(outSize, dtype=np.csingle)
@@ -479,9 +535,9 @@ class twix_map_obj:
         readSize = self.freadInfo.sz.astype(int)
         readShape = self.freadInfo.shape.astype(int)
         readCut = self.freadInfo.cut.astype(int)
-        # keepOS       = np.array[1:self.NCol/4, 1+self.NCol*3/4:self.NCol];
-        # bRemoveOS    = this.arg.removeOS;
-        # bIsReflected = this.IsReflected(cIxToRaw);
+        keepOS = np.concatenate([list(range(int(self.NCol/4))), list(range(int(self.NCol*3/4), int(self.NCol)))])
+
+        bIsReflected = self.IsReflected[cIxToRaw]
         # bRegrid      = this.flagRampSampRegrid && numel(this.rampSampTrj);
         slicedata = self.slicePos[cIxToRaw, :]
         # %SRY store information about raw data correction
@@ -559,7 +615,9 @@ class twix_map_obj:
                 if blockCtr != blockSz:
                     block = block[:, :, 0:blockCtr]
 
-                # if bRemoveOS: WTC: not implemented yet 
+                if self.removeOS:
+                    block = np.fft.fft(
+                        np.fft.ifft(block, axis=0)[keepOS, ...], axis=0)
 
                 # if  bDoRawDataCorrect && bIsRawDataCorrect(k): WTC: not implemented yet  
 
