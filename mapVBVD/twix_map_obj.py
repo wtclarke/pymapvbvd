@@ -274,7 +274,7 @@ class twix_map_obj:
                 if s == slice(None, None, None):
                     if k < (len(S) - 1):
                         selRange[cDim] = np.arange(0, self.dataSize()[cDim]).astype(int)
-                    else:  # all later dimensions selected and 'vectorized'! TODO: disable vectorizing
+                    else:  # all later dimensions selected and 'vectorized'!
                         for l in range(cDim, self.dataSize().size):
                             selRange[l] = np.arange(0, self.dataSize()[l]).astype(int)
                         outSize[k] = np.prod(self.dataSize()[cDim:])
@@ -355,8 +355,10 @@ class twix_map_obj:
 
         tmp = np.arange(0, self.fullSize[2:].prod().astype(int)).reshape(self.fullSize[2:].astype(int))
         # tmpSelRange = [x-1 for x in selRange] # python indexing from 0
+        for i, ids in enumerate(selRange[2:]):
+            tmp = np.take(tmp, ids, i)
         # tmp = tmp[tuple(selRange[2:])]
-        # tmp[np.ix_((selRange[2:]))] maybe?
+
         ixToRaw = ixToRaw[tmp]
         ixToRaw = ixToRaw.ravel()
         # delete all entries that point to zero (the "NULL"-pointer)
