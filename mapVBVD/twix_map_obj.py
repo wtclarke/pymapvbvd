@@ -779,10 +779,6 @@ class twix_map_obj:
                         blockInit = blockInit[:, :, :blockSz]
                         doLockblockSz = True
 
-                    # if bRegrid: WTC not implmented
-                    # rsTrj{3}  = single(1:blockSz);
-                    # trgTrj{3} = rsTrj{3};
-
                     tprev = t
 
                 blockCtr = 0
