@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import numpy as np
+from scipy.interpolate import griddata
 import copy
 import time
 from tqdm import tqdm, trange
@@ -591,8 +592,9 @@ class twix_map_obj:
         keepOS = np.concatenate([list(range(int(self.NCol/4))), list(range(int(self.NCol*3/4), int(self.NCol)))])
 
         bIsReflected = self.IsReflected[cIxToRaw]
-        bRegrid = self.regrid and (self.rampSampTrj.size > 1)
+        bRegrid = self.regrid and self.rampSampTrj.size > 1
         slicedata = self.slicePos[cIxToRaw, :]
+        ro_shift = self.ROoffcenter[cIxToRaw] * int(not self.ignoreROoffcenter)
         # %SRY store information about raw data correction
         # bDoRawDataCorrect = this.arg.doRawDataCorrect;
         # bIsRawDataCorrect = this.IsRawDataCorrect( cIxToRaw );
@@ -619,6 +621,12 @@ class twix_map_obj:
         blockCtr = 0
         blockInit = np.full((readShape[0], readShape[1], blockSz), -np.inf, dtype=np.csingle)  # init with garbage
         block = copy.deepcopy(blockInit)
+
+        if bRegrid:
+            v1 = np.array(range(1, selRangeSz[1] * blockSz + 1))
+            rsTrj = [self.rampSampTrj, v1]
+            trgTrj = np.linspace(np.min(self.rampSampTrj), np.max(self.rampSampTrj), int(self.NCol))
+            trgTrj = [trgTrj, v1]
 
         # counter for proper scaling of averages/segments
         count_ave = np.zeros((1, 1, out.shape[2]), np.single)  # pylint: disable=E1136  # pylint/issues/3139
@@ -662,16 +670,45 @@ class twix_map_obj:
                 # remove MDH data from block:
                 block = block[readCut, :, :]
 
-                # if bRegrid: WTC: not implemented yet
-
                 ix = np.arange(1 + k - blockCtr, k + 1, dtype=int)  # +1 so that it goes to k
                 if blockCtr != blockSz:
                     block = block[:, :, 0:blockCtr]
 
                 # if  bDoRawDataCorrect && bIsRawDataCorrect(k): WTC: not implemented yet  
 
+                # reflect fids when necessary
                 isRefl = np.where(bIsReflected[ix])[0]
                 block[:, :, isRefl] = block[-1::-1, :, isRefl]
+
+                if bRegrid:
+                    # correct for readout shifts
+                    # the nco frequency is always scaled to the max. gradient amp and does account for ramp-sampling
+                    deltak = np.max(np.abs(np.diff(rsTrj[0])))
+                    fovshift = np.reshape(ro_shift[ix], (1, 1, len(ix)), order='F')
+                    adcphase = deltak * (np.array(range(int(self.NCol)))[..., np.newaxis, np.newaxis] * fovshift)
+                    fovphase = fovshift * rsTrj[0][..., np.newaxis, np.newaxis]
+                    phase_factor = np.exp(1j * 2 * np.pi * (adcphase - fovphase))
+                    block *= phase_factor
+
+                    # regrid the data
+                    sz = block.shape
+                    ninterp = np.prod(sz[1:])
+                    rsTrj[1] = np.array(range(ninterp)) + 1
+                    trgTrj[1] = rsTrj[1]
+                    if ninterp == 1:
+                        blockdims = [0]
+                    else:
+                        blockdims = [0, 1]
+
+                    src_grid = tuple(rsTrj[dim] for dim in blockdims)
+                    trg_grid = tuple(trgTrj[dim] for dim in blockdims)
+                    z = np.reshape(block, (sz[0], -1), order='F')
+                    # TODO: handle 1d regridding
+                    xi, yi = np.meshgrid(trg_grid[1], trg_grid[0])
+                    x, y = np.meshgrid(src_grid[1], src_grid[0])
+                    # NOTE: there is some minor differences in regridding precision between python and matlab, don't
+                    # expect the same result from regridding
+                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz, order='F')
 
                 if self.removeOS:
                     block = np.fft.fft(
