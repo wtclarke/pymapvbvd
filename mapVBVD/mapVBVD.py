@@ -38,7 +38,6 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
     allocSize = 4096
     ulDMALength = byteMDH
     isEOF = False
-    last_progress = 0
 
     mdh_blob = np.zeros((byteMDH, 0), dtype=np.uint8)
     szBlob = mdh_blob.shape[1]  # pylint: disable=E1136  # pylint/issues/3139
@@ -64,11 +63,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
         dmaOff = 0
         dmaSkip = byteMDH
 
-    # Waitbar - implement if needed.
-
-    # import time
-    # start = time.time()
-    t = tqdm(total=100, desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
+    t = tqdm(total=np.float(str('%8.1f' % (measLength/1024**2))), desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
     while True:
         #         Read mdh as binary (uint8) and evaluate as little as possible to know...
         #           ... where the next mdh is (ulDMALength / ushSamplesInScan & ushUsedChannels)
@@ -103,7 +98,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
                 # jump to next full 512 bytes
                 if cPos % 512:
                     cPos = cPos + 512 - cPos % 512
-                isEOF = True
+                # isEOF = True
                 break
 
         if (bitMask & bit_5):  # MDH_SYNCDATA
@@ -140,14 +135,8 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
         mdh_blob[:, n_acq - 1] = data_u8
         filePos[n_acq - 1] = cPos
 
-        progress = 100 * (cPos - measOffset) / (measLength + measOffset )
-        t.update(np.ceil(progress))
-        # if (progress > last_progress + 0.01):
-        #     last_progress = progress
-        #     elapsed_time = time.time() - start
-        #     time_left = elapsed_time * (1 / progress - 1)
-        #     print(
-        #         f'{np.round(100 * progress):.2f} % read in {elapsed_time:.2f} s;\nestimated time left: {time_left:.2f} s\n')
+        # progress = (cPos - measOffset) / measLength
+        t.update(np.float(str('%8.1f' % (cPos/1024**2))))
 
         cPos = cPos + ulDMALength
 
@@ -250,6 +239,13 @@ def evalMDH(mdh_blob, version):
     return mdh, mask
 
 
+# Overload 'dict' to enable dot access to keys
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
 def mapVBVD(filename, **kwargs):
 
     # parse kw arguments
@@ -263,9 +259,6 @@ def mapVBVD(filename, **kwargs):
     bReadHeader = kwargs.get('bReadHeader', True)
 
     ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
-    removeOS = kwargs.get('removeOS', True)
-    squeeze = kwargs.get('squeeze', False)
-    regrid = kwargs.get('regrid', False)
 
     # TODO: handle filename input variations
     fid = open(filename, 'rb')
@@ -310,24 +303,20 @@ def mapVBVD(filename, **kwargs):
     #   2) reading the data
     twix_obj = []
 
-    # t = trange(NScans, leave=True)
     for s in range(NScans):
-        # t.set_description('Scan %d/%d, read all mdhs' % (s + 1, NScans))
-        # t.refresh()  # to show immediately the update
         cPos = measOffset[s]
         fid.seek(cPos, 0)
         hdr_len = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
 
-        currTwixObj = {}
-        rstraj = 0
+        currTwixObj = AttrDict()
+        currTwixObjHdr = AttrDict()
+        # rstraj = 0
         # read header
-        currTwixObjHdr = read_twix_hdr(fid)
+        currTwixObjHdr, rstraj = read_twix_hdr(fid, currTwixObjHdr)
         currTwixObj.update({'hdr': currTwixObjHdr})
 
         # declare data objects:
-        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj,
-                                           removeOS=removeOS,
-                                           squeeze=squeeze)
+        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj, *kwargs)
         currTwixObj.update({'image': mytmo('image')})
         currTwixObj.update({'noise': mytmo('noise')})
         currTwixObj.update({'phasecor': mytmo('phasecor')})
@@ -368,14 +357,14 @@ def mapVBVD(filename, **kwargs):
         # MDH_IMASCAN
         isCurrScan = mask.MDH_IMASCAN.astype(bool)
         if isCurrScan.any():
-            currTwixObj['image'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.image.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('image', None)
 
         # MDH_NOISEADJSCAN
         isCurrScan = mask.MDH_NOISEADJSCAN.astype(bool)
         if isCurrScan.any():
-            currTwixObj['noise'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.noise.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('noise', None)
 
@@ -384,7 +373,7 @@ def mapVBVD(filename, **kwargs):
                 mask.MDH_PHASCOR | mask.MDH_PHASESTABSCAN | mask.MDH_REFPHASESTABSCAN | mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['refscan'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscan.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('refscan', None)
 
@@ -392,7 +381,7 @@ def mapVBVD(filename, **kwargs):
         isCurrScan = (mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK) & ~mask.MDH_VOP
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['rtfeedback'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.rtfeedback.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('rtfeedback', None)
 
@@ -400,7 +389,7 @@ def mapVBVD(filename, **kwargs):
         isCurrScan = (mask.MDH_RTFEEDBACK & mask.MDH_VOP)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['vop'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.vop.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('vop', None)
 
@@ -408,7 +397,7 @@ def mapVBVD(filename, **kwargs):
         isCurrScan = mask.MDH_PHASCOR & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['phasecor'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.phasecor.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('phasecor', None)
 
@@ -416,7 +405,7 @@ def mapVBVD(filename, **kwargs):
         isCurrScan = mask.MDH_PHASCOR & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['refscan_phasecor'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscan_phasecor.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('refscan_phasecor', None)
 
@@ -425,7 +414,7 @@ def mapVBVD(filename, **kwargs):
                 ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['phasestab'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.phasestab.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('phasestab', None)
 
@@ -434,7 +423,7 @@ def mapVBVD(filename, **kwargs):
                 mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['refscan_phasestab'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscan_phasestab.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('refscan_phasestab', None)
 
@@ -443,7 +432,7 @@ def mapVBVD(filename, **kwargs):
                 ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['phasestab_ref0'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('phasestab_ref0', None)
 
@@ -452,7 +441,7 @@ def mapVBVD(filename, **kwargs):
                 mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['refscan_phasestab_ref0'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscan_phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('refscan_phasestab_ref0', None)
 
@@ -461,7 +450,7 @@ def mapVBVD(filename, **kwargs):
                 ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['phasestab_ref1'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('phasestab_ref1', None)
 
@@ -470,20 +459,20 @@ def mapVBVD(filename, **kwargs):
                 mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj['refscan_phasestab_ref1'].readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscan_phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
         else:
             currTwixObj.pop('refscan_phasestab_ref1', None)
 
-        if isEOF:
-            # recover from read error
-            # for keys in currTwixObj:
-            #    currTwixObj[keys].tryAndFixLastMdh()
-            # print('tryAndFixLastMdh not yet implemented')
-            pass
-        else:
-            for keys in currTwixObj:
-                if keys != 'hdr':
-                    currTwixObj[keys].clean()
+        # if isEOF:
+        #     # recover from read error
+        #     # for keys in currTwixObj:
+        #     #    currTwixObj[keys].tryAndFixLastMdh()
+        #     print('tryAndFixLastMdh not yet implemented')
+        #     # pass
+        # else:
+        #     for k in currTwixObj:
+        #         if k != 'hdr':
+        #             currTwixObj.k.clean()
 
         twix_obj.append(currTwixObj)
 
