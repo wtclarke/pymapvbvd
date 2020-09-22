@@ -1,8 +1,6 @@
 import numpy as np
-from dataclasses import dataclass,field
-import mapVBVD as pkg
-from mapVBVD.read_twix_hdr import read_twix_hdr
-from mapVBVD.twix_map_obj import twix_map_obj
+from dataclasses import dataclass, field
+from core import mapVBVD as pkg
 from attrdict import AttrDict, AttrMap, AttrDefault
 from tqdm import tqdm, trange
 
@@ -65,7 +63,8 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
         dmaOff = 0
         dmaSkip = byteMDH
 
-    t = tqdm(total=np.float(str('%8.1f' % (measLength/1024**2))), desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
+    t = tqdm(total=np.float(str('%8.1f' % (measLength / 1024 ** 2))),
+             desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
     while True:
         #         Read mdh as binary (uint8) and evaluate as little as possible to know...
         #           ... where the next mdh is (ulDMALength / ushSamplesInScan & ushUsedChannels)
@@ -129,18 +128,18 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
 
         # grow arrays in batches
         if n_acq > szBlob:
+            grownArray = np.zeros((mdh_blob.shape[0], allocSize),
+                                  dtype=np.uint8)  # pylint: disable=E1136  # pylint/issues/3139
+            mdh_blob = np.concatenate((mdh_blob, grownArray), axis=1)
 
-            grownArray = np.zeros((mdh_blob.shape[0],allocSize),dtype=np.uint8) # pylint: disable=E1136  # pylint/issues/3139
-            mdh_blob = np.concatenate((mdh_blob,grownArray), axis=1)
-            
-            filePos = np.concatenate((filePos,np.zeros((allocSize))), axis=0)
-            
-            szBlob = mdh_blob.shape[1] # pylint: disable=E1136  # pylint/issues/3139
-            
-        mdh_blob[:,n_acq-1] = data_u8
-        filePos[n_acq-1]  = cPos
+            filePos = np.concatenate((filePos, np.zeros((allocSize))), axis=0)
 
-        t.update(np.float(str('%8.1f' % (cPos/1024**2))))
+            szBlob = mdh_blob.shape[1]  # pylint: disable=E1136  # pylint/issues/3139
+
+        mdh_blob[:, n_acq - 1] = data_u8
+        filePos[n_acq - 1] = cPos
+
+        t.update(np.float(str('%8.1f' % (cPos / 1024 ** 2))))
 
         cPos = cPos + ulDMALength
 
@@ -238,8 +237,8 @@ def evalMDH(mdh_blob, version):
 
     mask.MDH_IMASCAN -= noImaScan
 
-def mapVBVD(filename, quiet=False, **kwargs):
 
+def mapVBVD(filename, quiet=False, **kwargs):
     if not quiet:
         print(f'pymapVBVD version {pkg.__version__}')
 
@@ -281,7 +280,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
             fid.seek(152 - 16, 1)
 
     else:
-        version  = 'vb'
+        version = 'vb'
         if not quiet:
             print('Software version: VB')
 
@@ -342,7 +341,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
         # print(f'Scan {s + 1}/{NScans}, read all mdhs:')
 
         mdh_blob, filePos, isEOF = loop_mdh_read(fid, version, NScans, s, measOffset[s],
-                                                 measLength[s],print_prog= not quiet)  # uint8; size: [ byteMDH  Nmeas ]
+                                                 measLength[s], print_prog=not quiet)  # uint8; size: [ byteMDH  Nmeas ]
 
         cPos = filePos[-1]
         # filePos = filePos[:-1]
@@ -459,10 +458,10 @@ def mapVBVD(filename, quiet=False, **kwargs):
         if isCurrScan.any():
             currTwixObj.refscan_phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
         else:
-            currTwixObj.pop('refscan_phasestab_ref1',None)
-        
+            currTwixObj.pop('refscan_phasestab_ref1', None)
+
         if isEOF:
-            #recover from read error
+            # recover from read error
             for keys in currTwixObj:
                 if keys != 'hdr':
                     currTwixObj[keys].tryAndFixLastMdh()
@@ -470,24 +469,24 @@ def mapVBVD(filename, quiet=False, **kwargs):
             for keys in currTwixObj:
                 if keys != 'hdr':
                     currTwixObj[keys].clean()
-        
+
         twix_obj.append(myAttrDict(currTwixObj))
-        
 
     fid.close()
 
     if len(twix_obj) == 1:
         twix_obj = twix_obj[0]
     # breakpoint()
-    return twix_obj 
+    return twix_obj
+
 
 # Add some class methods to AttrDict so that we get around the issue of not being able to
 # access methods of objects accessed as attributes.
 class myAttrDict(AttrDict):
-    def __init__(self,*args):
+    def __init__(self, *args):
         super().__init__(*args)
 
-    def search_header_for_keys(self,*args,**kwargs):
+    def search_header_for_keys(self, *args, **kwargs):
         """Search header keys for terms.
 
             Accesses search_for_keys method in header.
@@ -496,18 +495,18 @@ class myAttrDict(AttrDict):
                 regex (optional)    : Search using regex or for exact strings.
                 top_lvl (optional)  : Specify list of parameter sets to search (e.g. YAPS)
                 print_flag(optional): If False no output will be printed.
-        """  
-        return self['hdr'].search_for_keys(*args,**kwargs)
+        """
+        return self['hdr'].search_for_keys(*args, **kwargs)
 
-    def search_header_for_val(self,top_lvl,keys,**kwargs):
+    def search_header_for_val(self, top_lvl, keys, **kwargs):
         """Return values for keys found using search terms for terms.
 
             Args:
                 top_lvl         : Specify list of parameter sets to search (e.g. YAPS)
                 keys            : search terms as list of strings.
                 regex (optional): Search using regex or for exact strings.
-        """  
-        keys = self['hdr'].search_for_keys(keys,print_flag=False,top_lvl=top_lvl,**kwargs)
+        """
+        keys = self['hdr'].search_for_keys(keys, print_flag=False, top_lvl=top_lvl, **kwargs)
 
         out_vals = []
         for key in keys:
@@ -521,4 +520,3 @@ class myAttrDict(AttrDict):
         MDH = list(self.keys())
         MDH.pop(MDH.index('hdr'))
         return MDH
-

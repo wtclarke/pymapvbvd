@@ -6,6 +6,7 @@ import time
 from tqdm import tqdm, trange
 import logging
 
+
 class twix_map_obj:
 
     @property
@@ -228,29 +229,30 @@ class twix_map_obj:
             self.skipToFirstLine = False
         else:
             self.skipToFirstLine = True
+
     def __str__(self):
         des_str = ('***twix_map_obj***\n'
-                    f'File: {self.filename}\n'
-                    f'Software: {self.softwareVersion}\n'
-                    f'Number of acquisitions read {self.NAcq}\n'
-                    f'Data size is {np.array2string(self.fullSize,formatter={"float":lambda x: "%.0f" % x},separator=",")}\n'
-                    f'Squeezed data size is {np.array2string(self.sqzSize(),formatter={"int":lambda x: "%i" % x},separator=",")} ({self.sqzDims()})\n'
-                    f'NCol = {self.NCol:0.0f}\n'
-                    f'NCha = {self.NCha:0.0f}\n'
-                    f'NLin  = {self.NLin:0.0f}\n'
-                    f'NAve  = {self.NAve:0.0f}\n'
-                    f'NSli  = {self.NSli:0.0f}\n'
-                    f'NPar  = {self.NPar:0.0f}\n'
-                    f'NEco  = {self.NEco:0.0f}\n'
-                    f'NPhs  = {self.NPhs:0.0f}\n'
-                    f'NRep  = {self.NRep:0.0f}\n'
-                    f'NSet  = {self.NSet:0.0f}\n'
-                    f'NSeg  = {self.NSeg:0.0f}\n'
-                    f'NIda  = {self.NIda:0.0f}\n'
-                    f'NIdb  = {self.NIdb:0.0f}\n'
-                    f'NIdc  = {self.NIdc:0.0f}\n'
-                    f'NIdd  = {self.NIdd:0.0f}\n'
-                    f'NIde  = {self.NIde:0.0f}')
+                   f'File: {self.filename}\n'
+                   f'Software: {self.softwareVersion}\n'
+                   f'Number of acquisitions read {self.NAcq}\n'
+                   f'Data size is {np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")}\n'
+                   f'Squeezed data size is {np.array2string(self.sqzSize(), formatter={"int": lambda x: "%i" % x}, separator=",")} ({self.sqzDims()})\n'
+                   f'NCol = {self.NCol:0.0f}\n'
+                   f'NCha = {self.NCha:0.0f}\n'
+                   f'NLin  = {self.NLin:0.0f}\n'
+                   f'NAve  = {self.NAve:0.0f}\n'
+                   f'NSli  = {self.NSli:0.0f}\n'
+                   f'NPar  = {self.NPar:0.0f}\n'
+                   f'NEco  = {self.NEco:0.0f}\n'
+                   f'NPhs  = {self.NPhs:0.0f}\n'
+                   f'NRep  = {self.NRep:0.0f}\n'
+                   f'NSet  = {self.NSet:0.0f}\n'
+                   f'NSeg  = {self.NSeg:0.0f}\n'
+                   f'NIda  = {self.NIda:0.0f}\n'
+                   f'NIdb  = {self.NIdb:0.0f}\n'
+                   f'NIdc  = {self.NIdc:0.0f}\n'
+                   f'NIdd  = {self.NIdd:0.0f}\n'
+                   f'NIde  = {self.NIde:0.0f}')
         return des_str
 
     def __repr__(self):
@@ -313,10 +315,10 @@ class twix_map_obj:
         isLastAcqGood = False
         cnt = 0
 
-        while not isLastAcqGood  and  self.NAcq > 0  and cnt < 100:
+        while not isLastAcqGood and self.NAcq > 0 and cnt < 100:
             try:
                 self.clean()
-                self.unsorted(self.NAcq)                
+                self.unsorted(self.NAcq)
                 isLastAcqGood = True
             except Exception as e:
                 logging.exception(f'An error occurred whilst trying to fix last MDH. NAcq = {self.NAcq:.0f}')
@@ -326,45 +328,45 @@ class twix_map_obj:
             cnt += 1
 
     def clean(self):
-        #Cut mdh data to actual size. Maybe we rejected acquisitions at the end
-        #due to read errors.
-        if self.NAcq==0:
+        # Cut mdh data to actual size. Maybe we rejected acquisitions at the end
+        # due to read errors.
+        if self.NAcq == 0:
             return
-        
+
         fields = ['NCol', 'NCha',
                   'Lin', 'Par', 'Sli', 'Ave', 'Phs', 'Eco', 'Rep',
                   'Set', 'Seg', 'Ida', 'Idb', 'Idc', 'Idd', 'Ide',
-                  'centerCol'  ,   'centerLin',   'centerPar', 'cutOff', 
-                  'coilSelect' , 'ROoffcenter', 'timeSinceRF', 'IsReflected',
-                  'scancounter',   'timestamp',     'pmutime', 'IsRawDataCorrect',
-                  'slicePos'   ,    'iceParam',   'freeParam', 'memPos']
-        
+                  'centerCol', 'centerLin', 'centerPar', 'cutOff',
+                  'coilSelect', 'ROoffcenter', 'timeSinceRF', 'IsReflected',
+                  'scancounter', 'timestamp', 'pmutime', 'IsRawDataCorrect',
+                  'slicePos', 'iceParam', 'freeParam', 'memPos']
+
         nack = self.NAcq
-        idx = np.arange(0,nack-1)
+        idx = np.arange(0, nack - 1)
 
         for f in fields:
-            curr = getattr(self,f)
-            if curr.shape[0] > nack: # rarely
+            curr = getattr(self, f)
+            if curr.shape[0] > nack:  # rarely
                 print('Here')
-                setattr(self, f, curr[idx]) # 1st dim: samples,  2nd dim acquisitions
-        
-        self.NLin = np.max(self.Lin)+1 #+1 so that size isn't 0
-        self.NPar = np.max(self.Par)+1
-        self.NSli = np.max(self.Sli)+1
-        self.NAve = np.max(self.Ave)+1
-        self.NPhs = np.max(self.Phs)+1
-        self.NEco = np.max(self.Eco)+1
-        self.NRep = np.max(self.Rep)+1
-        self.NSet = np.max(self.Set)+1
-        self.NSeg = np.max(self.Seg)+1
-        self.NIda = np.max(self.Ida)+1
-        self.NIdb = np.max(self.Idb)+1
-        self.NIdc = np.max(self.Idc)+1
-        self.NIdd = np.max(self.Idd)+1
-        self.NIde = np.max(self.Ide)+1
-        
-        #ok, let us assume for now that all NCol and NCha entries are
-        #the same for all mdhs:
+                setattr(self, f, curr[idx])  # 1st dim: samples,  2nd dim acquisitions
+
+        self.NLin = np.max(self.Lin) + 1  # +1 so that size isn't 0
+        self.NPar = np.max(self.Par) + 1
+        self.NSli = np.max(self.Sli) + 1
+        self.NAve = np.max(self.Ave) + 1
+        self.NPhs = np.max(self.Phs) + 1
+        self.NEco = np.max(self.Eco) + 1
+        self.NRep = np.max(self.Rep) + 1
+        self.NSet = np.max(self.Set) + 1
+        self.NSeg = np.max(self.Seg) + 1
+        self.NIda = np.max(self.Ida) + 1
+        self.NIdb = np.max(self.Idb) + 1
+        self.NIdc = np.max(self.Idc) + 1
+        self.NIdd = np.max(self.Idd) + 1
+        self.NIde = np.max(self.Ide) + 1
+
+        # ok, let us assume for now that all NCol and NCha entries are
+        # the same for all mdhs:
 
         # WTC not sure if this is a good idea - will keep the same as original for now
         if self.NCol.ndim > 0:
@@ -459,7 +461,7 @@ class twix_map_obj:
 
                 outSize[k] = selRange[cDim].size
 
-            for r,s in zip(selRange,self.dataSize()):
+            for r, s in zip(selRange, self.dataSize()):
                 if np.max(r) > s:
                     raise Exception('selection out of range')
             # To implement indexing
@@ -504,7 +506,7 @@ class twix_map_obj:
     def unsorted(self, ival=None):
         # returns the unsorted data [NCol,NCha,#samples in acq. order]
         if ival:
-            mem = np.atleast_1d(self.memPos[ival-1])
+            mem = np.atleast_1d(self.memPos[ival - 1])
         else:
             mem = self.memPos
         out = self.readData(mem)
@@ -622,26 +624,26 @@ class twix_map_obj:
         fid = open(self.filename, 'rb')
         return fid
 
-    def readData(self,mem,cIxToTarg=None,cIxToRaw=None,selRange=None,selRangeSz=None,outSize=None):
+    def readData(self, mem, cIxToTarg=None, cIxToRaw=None, selRange=None, selRangeSz=None, outSize=None):
 
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [np.arange(0,self.dataSize()[0]).astype(int),np.arange(0,self.dataSize()[1]).astype(int)]#[slice(None,None,None),slice(None,None,None)]
+                selRange = [np.arange(0, self.dataSize()[0]).astype(int), np.arange(0, self.dataSize()[1]).astype(
+                    int)]  # [slice(None,None,None),slice(None,None,None)]
             else:
-                selRange[0] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
-                selRange[1] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
-            
-            outSize = np.append(self.dataSize()[0:2],mem.size).astype(int)
+                selRange[0] = np.arange(0, self.dataSize()[0]).astype(int)  # slice(None,None,None)
+                selRange[1] = np.arange(0, self.dataSize()[0]).astype(int)  # slice(None,None,None)
+
+            outSize = np.append(self.dataSize()[0:2], mem.size).astype(int)
             selRangeSz = outSize
-            cIxToTarg = np.arange(0,selRangeSz[2])
-            cIxToRaw  = cIxToTarg
+            cIxToTarg = np.arange(0, selRangeSz[2])
+            cIxToRaw = cIxToTarg
         # else:
         #     if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
         #         selRange[0] = slice(None,None,None)
         #     if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
         #         selRange[1] = slice(None,None,None)          
-
 
         out = np.zeros(outSize, dtype=np.csingle)
         out = out.reshape((selRangeSz[0], selRangeSz[1], -1))
@@ -653,7 +655,7 @@ class twix_map_obj:
         readSize = self.freadInfo.sz.astype(int)
         readShape = self.freadInfo.shape.astype(int)
         readCut = self.freadInfo.cut.astype(int)
-        keepOS = np.concatenate([list(range(int(self.NCol/4))), list(range(int(self.NCol*3/4), int(self.NCol)))])
+        keepOS = np.concatenate([list(range(int(self.NCol / 4))), list(range(int(self.NCol * 3 / 4), int(self.NCol)))])
 
         bIsReflected = self.IsReflected[cIxToRaw]
         bRegrid = self.regrid and self.rampSampTrj.size > 1
@@ -772,7 +774,8 @@ class twix_map_obj:
                     x, y = np.meshgrid(src_grid[1], src_grid[0])
                     # NOTE: there is some minor differences in regridding precision between python and matlab, don't
                     # expect the same result from regridding
-                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz, order='F')
+                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz,
+                                       order='F')
 
                 if self.removeOS:
                     block = np.fft.fft(
