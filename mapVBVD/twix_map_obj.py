@@ -4,47 +4,27 @@ from scipy.interpolate import griddata
 import copy
 import time
 from tqdm import tqdm, trange
-import logging
-
 
 class twix_map_obj:
 
-    
-    @property
-    def filename(self):
-        return self.fname
-               
-    @property
-    def rampSampTrj(self):
-        return self.rstrj
-
-    @property
-    def dataType(self):
-        return self.dType
-    
-    @property
-    def fullSize(self):
-        if self.full_size is None:
-            self.clean()
-        return self.full_size
-
-    # @fullSize.setter
-    # def fullSize(self, val):
-    #     self.full_size = val
-        
     @property
     def dataSize(self):
-        out = self.fullSize.copy()
-
+        self.clean()
+        # print(self.fullSize)
+        out = self.fullSize
+        if out is None:
+            self.clean()
+            out = self.fullSize
+        # Not yet implemented
         if self.removeOS:
             ix = self.dataDims.index('Col')
             out[ix] = self.NCol / 2
 
-        if self.average_dim[0] | self.average_dim[1]:
+        if self.flagAverageDim[0] | self.flagAverageDim[1]:
             print('averaging in col and cha dim not supported, resetting flag')
-            self.average_dim[0:2] = False
+            self.flagAverageDim[0:2] = False
 
-        out[self.average_dim] = 1
+        out[self.flagAverageDim] = 1
         return out
 
     @property
@@ -69,56 +49,48 @@ class twix_map_obj:
         self.removeOS = removeOS
 
     @property
-    def flagAverageDim(self):
-        return self.average_dim
-
-    @flagAverageDim.setter
-    def flagAverageDim(self, val):
-        self.average_dim = val
-
-    @property
     def flagDoAverage(self):
         ix = self.dataDims.index('Ave')
-        return self.average_dim[ix]
+        return self.flagAverageDim[ix]
 
     @flagDoAverage.setter
     def flagDoAverage(self, bval):
         ix = self.dataDims.index('Ave')
-        self.average_dim[ix] = bval
+        self.flagAverageDim[ix] = bval
 
     @property
     def flagAverageReps(self):
         ix = self.dataDims.index('Rep')
-        return self.average_dim[ix]
+        return self.flagAverageDim[ix]
 
     @flagAverageReps.setter
     def flagAverageReps(self, bval):
         ix = self.dataDims.index('Rep')
-        self.average_dim[ix] = bval
+        self.flagAverageDim[ix] = bval
 
     @property
     def flagAverageSets(self):
         ix = self.dataDims.index('Set')
-        return self.average_dim[ix]
+        return self.flagAverageDim[ix]
 
     @flagAverageSets.setter
     def flagAverageSets(self, bval):
         ix = self.dataDims.index('Set')
-        self.average_dim[ix] = bval
+        self.flagAverageDim[ix] = bval
 
     @property
     def flagIgnoreSeg(self):
         ix = self.dataDims.index('Seg')
-        return self.average_dim[ix]
+        return self.flagAverageDim[ix]
 
     @flagIgnoreSeg.setter
     def flagIgnoreSeg(self, bval):
         ix = self.dataDims.index('Seg')
-        self.average_dim[ix] = bval
+        self.flagAverageDim[ix] = bval
 
     @property
     def flagSkipToFirstLine(self):
-        return self.skipToFirstLine
+        return self.flagSkipToFirstLine
 
     @flagSkipToFirstLine.setter
     def flagSkipToFirstLine(self, bval):
@@ -132,8 +104,8 @@ class twix_map_obj:
                 self.skipLin = 0
                 self.skipPar = 0
 
-            self.full_size[2] = np.maximum(1, self.NLin - self.skipLin)
-            self.full_size[3] = np.maximum(1, self.NPar - self.skipPar)
+            self.fullSize[2] = np.maximum(1, self.NLin - self.skipLin)
+            self.fullSize[3] = np.maximum(1, self.NPar - self.skipPar)
 
     @property
     def flagRampSampRegrid(self):
@@ -141,29 +113,11 @@ class twix_map_obj:
 
     @flagRampSampRegrid.setter
     def flagRampSampRegrid(self, bval):
-        if bval and self.rstrj is None:
+        if bval and self.rampSampTrj is None:
             raise Exception('No trajectory for regridding available')
         self.regrid = bval
 
-    # TODO: flagDoRawDataCorrect
-    @property
-    def flagDoRawDataCorrect(self):
-
-        return False
-
-    @flagDoRawDataCorrect.setter
-    def flagDoRawDataCorrect(self, bval):
-        pass
-
-    # TODO: RawDataCorrectionFactors
-    @property
-    def RawDataCorrectionFactors(self):
-        return []
-
-    @RawDataCorrectionFactors.setter
-    def RawDataCorrectionFactors(self, bval):
-        pass
-
+    # TODO: flagDoRawDataCorrect, RawDataCorrectionFactors
 
     def __init__(self, dataType, fname, version, rstraj=None, **kwargs):
         self.ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
@@ -173,10 +127,9 @@ class twix_map_obj:
         self.averageReps = kwargs.get('averageReps', False)
         self.averageSets = kwargs.get('averageSets', False)
         self.ignoreSeg = kwargs.get('ignoreSeg', False)
-        self.squeeze = kwargs.get('squeeze', False)
 
-        self.dType = dataType.lower()
-        self.fname = fname
+        self.dataType = dataType.lower()
+        self.filename = fname
         self.softwareVersion = version
 
         # self.IsReflected      = logical([]);
@@ -205,7 +158,7 @@ class twix_map_obj:
         else:
             raise ValueError('software version not supported')
 
-        self.rstrj = rstraj
+        self.rampSampTrj = rstraj
         if rstraj is None:
             self.regrid = False
 
@@ -261,47 +214,19 @@ class twix_map_obj:
 
         self.skipLin = None
         self.skipPar = None
-        self.full_size = None
+        self.fullSize = None
 
         # Flags
-        self.average_dim = np.full(16, False, dtype=np.bool)
-        self.average_dim[self.dataDims.index('Ave')] = self.doAverage
-        self.average_dim[self.dataDims.index('Rep')] = self.averageReps
-        self.average_dim[self.dataDims.index('Set')] = self.averageSets
-        self.average_dim[self.dataDims.index('Seg')] = self.ignoreSeg
+        self.flagAverageDim = np.full(16, False, dtype=np.bool)
+        self.flagAverageDim[self.dataDims.index('Ave')] = self.doAverage
+        self.flagAverageDim[self.dataDims.index('Rep')] = self.averageReps
+        self.flagAverageDim[self.dataDims.index('Set')] = self.averageSets
+        self.flagAverageDim[self.dataDims.index('Seg')] = self.ignoreSeg
 
-        if self.dType == 'image' or self.dType == 'phasestab':
+        if self.dataType == 'image' or self.dataType == 'phasestab':
             self.skipToFirstLine = False
         else:
             self.skipToFirstLine = True
-
-    def __str__(self):
-        des_str = ('***twix_map_obj***\n'
-                   f'File: {self.fname}\n'
-                   f'Software: {self.softwareVersion}\n'
-                   f'Number of acquisitions read {self.NAcq}\n'
-                   f'Data size is {np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")}\n'
-                   f'Squeezed data size is {np.array2string(self.sqzSize, formatter={"int": lambda x: "%i" % x}, separator=",")} ({self.sqzDims})\n'
-                   f'NCol = {self.NCol:0.0f}\n'
-                   f'NCha = {self.NCha:0.0f}\n'
-                   f'NLin  = {self.NLin:0.0f}\n'
-                   f'NAve  = {self.NAve:0.0f}\n'
-                   f'NSli  = {self.NSli:0.0f}\n'
-                   f'NPar  = {self.NPar:0.0f}\n'
-                   f'NEco  = {self.NEco:0.0f}\n'
-                   f'NPhs  = {self.NPhs:0.0f}\n'
-                   f'NRep  = {self.NRep:0.0f}\n'
-                   f'NSet  = {self.NSet:0.0f}\n'
-                   f'NSeg  = {self.NSeg:0.0f}\n'
-                   f'NIda  = {self.NIda:0.0f}\n'
-                   f'NIdb  = {self.NIdb:0.0f}\n'
-                   f'NIdc  = {self.NIdc:0.0f}\n'
-                   f'NIdd  = {self.NIdd:0.0f}\n'
-                   f'NIde  = {self.NIde:0.0f}')
-        return des_str
-
-    def __repr__(self):
-        return str(self)
 
     def readMDH(self, mdh, filePos, useScan):
         #         % extract all values in all MDHs at once
@@ -356,44 +281,10 @@ class twix_map_obj:
 
         self.memPos = filePos[useScan]
 
-    def tryAndFixLastMdh(self):
-        isLastAcqGood = False
-        cnt = 0
-
-        while not isLastAcqGood and self.NAcq > 0 and cnt < 100:
-            try:
-                # self.clean()
-                self.unsorted(self.NAcq)
-                isLastAcqGood = True
-            except Exception as e:
-                logging.exception(f'An error occurred whilst trying to fix last MDH. NAcq = {self.NAcq:.0f}')
-                self.isBrokenFile = True
-                self.NAcq -= 1
-
-            cnt += 1
-
     def clean(self):
         # Cut mdh data to actual size. Maybe we rejected acquisitions at the end
         # due to read errors.
-        if self.NAcq == 0:
-            return
-
-        fields = ['NCol', 'NCha',
-                  'Lin', 'Par', 'Sli', 'Ave', 'Phs', 'Eco', 'Rep',
-                  'Set', 'Seg', 'Ida', 'Idb', 'Idc', 'Idd', 'Ide',
-                  'centerCol', 'centerLin', 'centerPar', 'cutOff',
-                  'coilSelect', 'ROoffcenter', 'timeSinceRF', 'IsReflected',
-                  'scancounter', 'timestamp', 'pmutime', 'IsRawDataCorrect',
-                  'slicePos', 'iceParam', 'freeParam', 'memPos']
-
-        nack = self.NAcq
-        idx = np.arange(0, nack - 1)
-
-        # for f in fields:
-        #     curr = getattr(self, f)
-        #     if curr.shape[0] > nack:  # rarely
-        #         print('Here')
-        #         setattr(self, f, curr[idx])  # 1st dim: samples,  2nd dim acquisitions
+        # WTC not implemented - nothing to test with
 
         self.NLin = np.max(self.Lin) + 1  # +1 so that size isn't 0
         self.NPar = np.max(self.Par) + 1
@@ -412,14 +303,13 @@ class twix_map_obj:
 
         # ok, let us assume for now that all NCol and NCha entries are
         # the same for all mdhs:
-
         # WTC not sure if this is a good idea - will keep the same as original for now
         if self.NCol.ndim > 0:
             self.NCol = self.NCol[0]
         if self.NCha.ndim > 0:
             self.NCha = self.NCha[0]
 
-        if self.dType == 'refscan':
+        if self.dataType == 'refscan':
             # pehses: check for lines with 'negative' line/partition numbers
             # this can happen when the reference scan line/partition range
             # exceeds the one of the actual imaging scan
@@ -448,12 +338,12 @@ class twix_map_obj:
         NLinAlloc = np.maximum(1, self.NLin - self.skipLin)
         NParAlloc = np.maximum(1, self.NPar - self.skipPar)
 
-        self.full_size = np.array(
+        self.fullSize = np.array(
             [self.NCol, self.NCha, NLinAlloc, NParAlloc,
              self.NSli, self.NAve, self.NPhs, self.NEco,
              self.NRep, self.NSet, self.NSeg, self.NIda,
              self.NIdb, self.NIdc, self.NIdd, self.NIde]
-            , dtype=np.int)
+        )
 
         nByte = self.NCha * (self.freadInfo.szChannelHeader + 8 * self.NCol)
 
@@ -507,7 +397,7 @@ class twix_map_obj:
                 outSize[k] = selRange[cDim].size
 
             for r, s in zip(selRange, self.dataSize):
-                if np.max(r) > s:
+                if max(r) > s:
                     raise Exception('selection out of range')
             # To implement indexing
 
@@ -516,7 +406,7 @@ class twix_map_obj:
             selRangeSz[idx] = k.size
 
         # now select all indices for the dims that are averaged
-        for iDx, k in enumerate(np.nditer(self.average_dim)):
+        for iDx, k in enumerate(np.nditer(self.flagAverageDim)):
             if k:
                 self.clean()
                 selRange[iDx] = np.arange(0, self.fullSize[iDx])
@@ -551,7 +441,7 @@ class twix_map_obj:
     def unsorted(self, ival=None):
         # returns the unsorted data [NCol,NCha,#samples in acq. order]
         if ival:
-            mem = np.atleast_1d(self.memPos[ival - 1])
+            mem = self.memPos(ival)
         else:
             mem = self.memPos
         out = self.readData(mem)
@@ -592,33 +482,33 @@ class twix_map_obj:
         # calculate ixToTarg for possibly smaller, shifted + segmented
         # target matrix:
         cIx = np.zeros((14, ixToRaw.size), dtype=int)
-        if ~self.average_dim[2]:
+        if ~self.flagAverageDim[2]:
             cIx[0, :] = self.Lin[ixToRaw] - self.skipLin
-        if ~self.average_dim[3]:
+        if ~self.flagAverageDim[3]:
             cIx[1, :] = self.Par[ixToRaw] - self.skipPar
-        if ~self.average_dim[4]:
+        if ~self.flagAverageDim[4]:
             cIx[2, :] = self.Sli[ixToRaw]
-        if ~self.average_dim[5]:
+        if ~self.flagAverageDim[5]:
             cIx[3, :] = self.Ave[ixToRaw]
-        if ~self.average_dim[6]:
+        if ~self.flagAverageDim[6]:
             cIx[4, :] = self.Phs[ixToRaw]
-        if ~self.average_dim[7]:
+        if ~self.flagAverageDim[7]:
             cIx[5, :] = self.Eco[ixToRaw]
-        if ~self.average_dim[8]:
+        if ~self.flagAverageDim[8]:
             cIx[6, :] = self.Rep[ixToRaw]
-        if ~self.average_dim[9]:
+        if ~self.flagAverageDim[9]:
             cIx[7, :] = self.Set[ixToRaw]
-        if ~self.average_dim[10]:
+        if ~self.flagAverageDim[10]:
             cIx[8, :] = self.Seg[ixToRaw]
-        if ~self.average_dim[11]:
+        if ~self.flagAverageDim[11]:
             cIx[9, :] = self.Ida[ixToRaw]
-        if ~self.average_dim[12]:
+        if ~self.flagAverageDim[12]:
             cIx[10, :] = self.Idb[ixToRaw]
-        if ~self.average_dim[13]:
+        if ~self.flagAverageDim[13]:
             cIx[11, :] = self.Idc[ixToRaw]
-        if ~self.average_dim[14]:
+        if ~self.flagAverageDim[14]:
             cIx[12, :] = self.Idd[ixToRaw]
-        if ~self.average_dim[15]:
+        if ~self.flagAverageDim[15]:
             cIx[13, :] = self.Ide[ixToRaw]
         # import pdb; pdb.set_trace()
 
@@ -666,29 +556,27 @@ class twix_map_obj:
         return N.astype(idxClass)
 
     def _fileopen(self):
-        fid = open(self.fname, 'rb')
+        fid = open(self.filename, 'rb')
         return fid
 
     def readData(self, mem, cIxToTarg=None, cIxToRaw=None, selRange=None, selRangeSz=None, outSize=None):
-
         mem = mem.astype(int)
+        # print(f'In readData. mem = {mem}')
+        # import pdb; pdb.set_trace()
         if outSize is None:
             if selRange is None:
-                selRange = [slice(None,None,None),slice(None,None,None)]
-                #[np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(int)]
-                      # [slice(None,None,None),slice(None,None,None)]
+                selRange = [slice(None, None, None), slice(None, None, None)]
             else:
-                selRange[0] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
-                selRange[1] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
-
-            outSize = np.append(self.dataSize[0:2], mem.size).astype(int)
+                selRange[0] = slice(None, None, None)
+                selRange[1] = slice(None, None, None)
+            outSize = np.concatenate((self.dataSize[0:2], mem.shape)).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0, selRangeSz[2])
             cIxToRaw = cIxToTarg
         else:
-            if np.array_equiv(selRange[0], np.arange(self.dataSize[0]).astype(int)):
+            if np.array_equiv(selRange[0], np.arange(0, self.dataSize[0]).astype(int)):
                 selRange[0] = slice(None, None, None)
-            if np.array_equiv(selRange[1], np.arange(self.dataSize[1]).astype(int)):
+            if np.array_equiv(selRange[1], np.arange(0, self.dataSize[1]).astype(int)):
                 selRange[1] = slice(None, None, None)
 
         out = np.zeros(outSize, dtype=np.csingle)
@@ -701,10 +589,10 @@ class twix_map_obj:
         readSize = self.freadInfo.sz.astype(int)
         readShape = self.freadInfo.shape.astype(int)
         readCut = self.freadInfo.cut.astype(int)
-        keepOS = np.concatenate([list(range(int(self.NCol / 4))), list(range(int(self.NCol * 3 / 4), int(self.NCol)))])
+        keepOS = np.concatenate([list(range(int(self.NCol/4))), list(range(int(self.NCol*3/4), int(self.NCol)))])
 
         bIsReflected = self.IsReflected[cIxToRaw]
-        bRegrid = self.regrid and self.rstrj.size > 1
+        bRegrid = self.regrid and self.rampSampTrj.size > 1
         slicedata = self.slicePos[cIxToRaw, :]
         ro_shift = self.ROoffcenter[cIxToRaw] * int(not self.ignoreROoffcenter)
         # %SRY store information about raw data correction
@@ -736,8 +624,8 @@ class twix_map_obj:
 
         if bRegrid:
             v1 = np.array(range(1, selRangeSz[1] * blockSz + 1))
-            rsTrj = [self.rstrj, v1]
-            trgTrj = np.linspace(np.min(self.rstrj), np.max(self.rstrj), int(self.NCol))
+            rsTrj = [self.rampSampTrj, v1]
+            trgTrj = np.linspace(np.min(self.rampSampTrj), np.max(self.rampSampTrj), int(self.NCol))
             trgTrj = [trgTrj, v1]
 
         # counter for proper scaling of averages/segments
@@ -751,9 +639,9 @@ class twix_map_obj:
             fid.seek(mem[k] + szScanHeader, 0)
             raw = np.fromfile(fid, dtype=np.float32, count=readSize.prod()).reshape(
                 (readSize[1], readSize[0]))  # do transpose by switching readSize order
-            # With incomplete files fread() returns less than readSize points. The subsequent reshape will
-            # therefore error out. We could check if numel(raw) == prod(readSize), but people recommend
-            # exception handling for performance reasons. Do it.
+            # % MiVÃ¶: With incomplete files fread() returns less than readSize points. The subsequent reshape will therefore error out.
+            # %       We could check if numel(raw) == prod(readSize), but people recommend exception handling for performance
+            # %       reasons. Do it.
             try:
                 raw = (raw[:, 0] + 1j * raw[:, 1]).reshape(readShape, order='F')
             except ValueError:
@@ -767,9 +655,8 @@ class twix_map_obj:
                 raw = raw.reshape(readShape)
                 isBrokenRead = True  # remember it and bail out later
 
-            block[:, :, blockCtr, None] = copy.deepcopy(raw).reshape(np.append(readShape, 1))
-            # fast serial storage in a cache array - this is probably all very dependent on whether I've got things
-            # contiguous in memory. I highly doubt that I have on this first pass. WTC
+            block[:, :, blockCtr, None] = copy.deepcopy(raw).reshape(np.append(readShape,
+                                                                               1))  # fast serial storage in a cache array - this is probably all very dependent on whether I've got things contiguous in memory. I highly doubt that I have on this first pass. WTC
             blockCtr += 1
 
             # Do expensive computations and reorderings on the gathered block.
@@ -787,7 +674,7 @@ class twix_map_obj:
                 if blockCtr != blockSz:
                     block = block[:, :, 0:blockCtr]
 
-                # if  bDoRawDataCorrect && bIsRawDataCorrect(k): WTC: not implemented yet
+                # if  bDoRawDataCorrect && bIsRawDataCorrect(k): WTC: not implemented yet  
 
                 # reflect fids when necessary
                 isRefl = np.where(bIsReflected[ix])[0]
@@ -821,8 +708,7 @@ class twix_map_obj:
                     x, y = np.meshgrid(src_grid[1], src_grid[0])
                     # NOTE: there is some minor differences in regridding precision between python and matlab, don't
                     # expect the same result from regridding
-                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz,
-                                       order='F')
+                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz, order='F')
 
                 if self.removeOS:
                     block = np.fft.fft(
@@ -914,4 +800,4 @@ class twix_map_obj:
 
         out = np.ascontiguousarray(out.reshape(outSize))
 
-        return out if not self.squeeze else np.squeeze(out)
+        return out
