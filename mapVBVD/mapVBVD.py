@@ -77,7 +77,10 @@ def loop_mdh_read( fid, version, Nscans, scan, measOffset, measLength,print_prog
         try:
             #read everything and cut out the mdh
             data_u8 = np.fromfile(fid, dtype=np.uint8, count=int(ulDMALength))
+            if data_u8.size < int(ulDMALength):
+                raise EOFError
             data_u8 = data_u8[mdhStart:]
+
         except EOFError:
             import warnings
             warningString = f'\nAn unexpected read error occurred at this byte offset: {cPos} ({cPos/1024**3} GiB)\n'
@@ -445,9 +448,9 @@ def mapVBVD(filename,quiet=False):
         
         if isEOF:
             #recover from read error
-            #for keys in currTwixObj:
-            #    currTwixObj[keys].tryAndFixLastMdh()
-            print('tryAndFixLastMdh not yet implemented')
+            for keys in currTwixObj:
+                if keys != 'hdr':
+                    currTwixObj[keys].tryAndFixLastMdh()
         else:
             for keys in currTwixObj:
                 if keys != 'hdr':

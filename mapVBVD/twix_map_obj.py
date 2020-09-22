@@ -2,6 +2,7 @@ from dataclasses import dataclass,field
 import numpy as np
 import copy
 import time
+import logging
 
 class twix_map_obj:
     def __init__(self, dataType,fname,version,rstraj):
@@ -177,11 +178,45 @@ class twix_map_obj:
         self.freeParam   =  mdh.aushFreePara[useScan].astype(float)
 
         self.memPos = filePos[useScan]
-        
+
+    def tryAndFixLastMdh(self):
+        isLastAcqGood = False
+        cnt = 0
+
+        while not isLastAcqGood  and  self.NAcq > 0  and cnt < 100:
+            try:
+                self.clean()
+                self.unsorted(self.NAcq)                
+                isLastAcqGood = True
+            except Exception as e:
+                logging.exception(f'An error occurred whilst trying to fix last MDH. NAcq = {self.NAcq:.0f}')
+                self.isBrokenFile = True
+                self.NAcq -= 1
+
+            cnt += 1
+
     def clean(self):
         #Cut mdh data to actual size. Maybe we rejected acquisitions at the end
         #due to read errors.
-        # WTC not implemented - nothing to test with
+        if self.NAcq==0:
+            return
+        
+        fields = ['NCol', 'NCha',
+                  'Lin', 'Par', 'Sli', 'Ave', 'Phs', 'Eco', 'Rep',
+                  'Set', 'Seg', 'Ida', 'Idb', 'Idc', 'Idd', 'Ide',
+                  'centerCol'  ,   'centerLin',   'centerPar', 'cutOff', 
+                  'coilSelect' , 'ROoffcenter', 'timeSinceRF', 'IsReflected',
+                  'scancounter',   'timestamp',     'pmutime', 'IsRawDataCorrect',
+                  'slicePos'   ,    'iceParam',   'freeParam', 'memPos']
+        
+        nack = self.NAcq
+        idx = np.arange(0,nack-1)
+
+        for f in fields:
+            curr = getattr(self,f)
+            if curr.shape[0] > nack: # rarely
+                print('Here')
+                setattr(self, f, curr[idx]) # 1st dim: samples,  2nd dim acquisitions
         
         self.NLin = np.max(self.Lin)+1 #+1 so that size isn't 0
         self.NPar = np.max(self.Par)+1
@@ -352,7 +387,7 @@ class twix_map_obj:
     def unsorted(self,ival=None):
         # returns the unsorted data [NCol,NCha,#samples in acq. order]
         if ival:
-            mem = self.memPos(ival)
+            mem = np.atleast_1d(self.memPos[ival-1])
         else:
             mem = self.memPos
         out = self.readData(mem)
@@ -464,15 +499,16 @@ class twix_map_obj:
         return fid
 
     def readData(self,mem,cIxToTarg=None,cIxToRaw=None,selRange=None,selRangeSz=None,outSize=None):
+
         mem = mem.astype(int)
-        
         if outSize is None:
             if selRange is None:
                 selRange = [np.arange(0,self.dataSize()[0]).astype(int),np.arange(0,self.dataSize()[1]).astype(int)]#[slice(None,None,None),slice(None,None,None)]
             else:
                 selRange[0] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
                 selRange[1] = np.arange(0,self.dataSize()[0]).astype(int) #slice(None,None,None)
-            outSize = np.concatenate((self.dataSize()[0:2],mem.shape)).astype(int)
+            
+            outSize = np.append(self.dataSize()[0:2],mem.size).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0,selRangeSz[2])
             cIxToRaw  = cIxToTarg
