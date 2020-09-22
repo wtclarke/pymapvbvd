@@ -10,14 +10,19 @@ import logging
 class twix_map_obj:
 
     @property
-    def dataSize(self):
-        self.clean()
-        # print(self.fullSize)
-        out = self.fullSize
-        if out is None:
+    def fullSize(self):
+        if self.full_size is None:
             self.clean()
-            out = self.fullSize
-        # Not yet implemented
+        return self.full_size
+
+    # @fullSize.setter
+    # def fullSize(self, val):
+    #     self.full_size = val
+        
+    @property
+    def dataSize(self):
+        out = self.fullSize.copy()
+
         if self.removeOS:
             ix = self.dataDims.index('Col')
             out[ix] = self.NCol / 2
@@ -106,8 +111,8 @@ class twix_map_obj:
                 self.skipLin = 0
                 self.skipPar = 0
 
-            self.fullSize[2] = np.maximum(1, self.NLin - self.skipLin)
-            self.fullSize[3] = np.maximum(1, self.NPar - self.skipPar)
+            self.full_size[2] = np.maximum(1, self.NLin - self.skipLin)
+            self.full_size[3] = np.maximum(1, self.NPar - self.skipPar)
 
     @property
     def flagRampSampRegrid(self):
@@ -217,7 +222,7 @@ class twix_map_obj:
 
         self.skipLin = None
         self.skipPar = None
-        self.fullSize = None
+        self.full_size = None
 
         # Flags
         self.flagAverageDim = np.full(16, False, dtype=np.bool)
@@ -318,7 +323,7 @@ class twix_map_obj:
 
         while not isLastAcqGood and self.NAcq > 0 and cnt < 100:
             try:
-                self.clean()
+                # self.clean()
                 self.unsorted(self.NAcq)
                 isLastAcqGood = True
             except Exception as e:
@@ -404,12 +409,12 @@ class twix_map_obj:
         NLinAlloc = np.maximum(1, self.NLin - self.skipLin)
         NParAlloc = np.maximum(1, self.NPar - self.skipPar)
 
-        self.fullSize = np.array(
+        self.full_size = np.array(
             [self.NCol, self.NCha, NLinAlloc, NParAlloc,
              self.NSli, self.NAve, self.NPhs, self.NEco,
              self.NRep, self.NSet, self.NSeg, self.NIda,
              self.NIdb, self.NIdc, self.NIdd, self.NIde]
-        )
+            , dtype=np.int)
 
         nByte = self.NCha * (self.freadInfo.szChannelHeader + 8 * self.NCol)
 
@@ -630,20 +635,21 @@ class twix_map_obj:
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(
-                    int)]  # [slice(None,None,None),slice(None,None,None)]
+                selRange = [slice(None,None,None),slice(None,None,None)]
+                #[np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(int)]
+                      # [slice(None,None,None),slice(None,None,None)]
             else:
-                selRange[0] = np.arange(0, self.dataSize[0]).astype(int)  # slice(None,None,None)
-                selRange[1] = np.arange(0, self.dataSize[0]).astype(int)  # slice(None,None,None)
+                selRange[0] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
+                selRange[1] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
 
             outSize = np.append(self.dataSize[0:2], mem.size).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0, selRangeSz[2])
             cIxToRaw = cIxToTarg
         else:
-            if np.array_equiv(selRange[0], np.arange(0, self.dataSize[0]).astype(int)):
+            if np.array_equiv(selRange[0], np.arange(self.dataSize[0]).astype(int)):
                 selRange[0] = slice(None, None, None)
-            if np.array_equiv(selRange[1], np.arange(0, self.dataSize[1]).astype(int)):
+            if np.array_equiv(selRange[1], np.arange(self.dataSize[1]).astype(int)):
                 selRange[1] = slice(None, None, None)
 
         out = np.zeros(outSize, dtype=np.csingle)
@@ -706,9 +712,9 @@ class twix_map_obj:
             fid.seek(mem[k] + szScanHeader, 0)
             raw = np.fromfile(fid, dtype=np.float32, count=readSize.prod()).reshape(
                 (readSize[1], readSize[0]))  # do transpose by switching readSize order
-            # % MiVÃ¶: With incomplete files fread() returns less than readSize points. The subsequent reshape will therefore error out.
-            # %       We could check if numel(raw) == prod(readSize), but people recommend exception handling for performance
-            # %       reasons. Do it.
+            # With incomplete files fread() returns less than readSize points. The subsequent reshape will
+            # therefore error out. We could check if numel(raw) == prod(readSize), but people recommend
+            # exception handling for performance reasons. Do it.
             try:
                 raw = (raw[:, 0] + 1j * raw[:, 1]).reshape(readShape, order='F')
             except ValueError:
@@ -722,8 +728,9 @@ class twix_map_obj:
                 raw = raw.reshape(readShape)
                 isBrokenRead = True  # remember it and bail out later
 
-            block[:, :, blockCtr, None] = copy.deepcopy(raw).reshape(np.append(readShape,
-                                                                               1))  # fast serial storage in a cache array - this is probably all very dependent on whether I've got things contiguous in memory. I highly doubt that I have on this first pass. WTC
+            block[:, :, blockCtr, None] = copy.deepcopy(raw).reshape(np.append(readShape, 1))
+            # fast serial storage in a cache array - this is probably all very dependent on whether I've got things
+            # contiguous in memory. I highly doubt that I have on this first pass. WTC
             blockCtr += 1
 
             # Do expensive computations and reorderings on the gathered block.

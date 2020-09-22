@@ -4,17 +4,18 @@ from scipy.integrate import cumtrapz
 from itertools import chain
 from attrdict import AttrDict
 
+
 class twix_hdr(AttrDict):
-    def __init__(self,*args):
+    def __init__(self, *args):
         super().__init__(*args)
 
     @staticmethod
-    def search_using_tuple(s_terms,key,regex=True):
+    def search_using_tuple(s_terms, key, regex=True):
         if regex:
 
-            def regex_tuple(pattern,key_tuple):
+            def regex_tuple(pattern, key_tuple):
                 inner_out = []
-                re_comp = re.compile(pattern,re.IGNORECASE)
+                re_comp = re.compile(pattern, re.IGNORECASE)
                 for k in key_tuple:
                     m = re_comp.search(k)
                     if m:
@@ -25,12 +26,12 @@ class twix_hdr(AttrDict):
 
             out = []
             for st in s_terms:
-                out.append(regex_tuple(st,key))
-            return all(out)  
+                out.append(regex_tuple(st, key))
+            return all(out)
         else:
             return all([st in key for st in s_terms])
 
-    def search_for_keys(self,search_terms,top_lvl=None,print_flag=True,regex=True):
+    def search_for_keys(self, search_terms, top_lvl=None, print_flag=True, regex=True):
         """Search header keys for terms.
 
             Args:
@@ -38,27 +39,27 @@ class twix_hdr(AttrDict):
                 recursive (optional): Search using regex or for exact strings.
                 top_lvl (optional)  : Specify list of parameter sets to search (e.g. YAPS)
                 print_flag(optional): If False no output will be printed.
-        """  
-        
+        """
+
         if top_lvl is None:
             top_lvl = self.keys()
-        elif isinstance(top_lvl,str):
-            top_lvl = [top_lvl,]
-        
+        elif isinstance(top_lvl, str):
+            top_lvl = [top_lvl, ]
+
         out = {}
         for key in top_lvl:
             matching_keys = []
             list_of_keys = self[key].keys()
             for sub_key in list_of_keys:
-                if twix_hdr.search_using_tuple(search_terms,sub_key,regex=regex):
+                if twix_hdr.search_using_tuple(search_terms, sub_key, regex=regex):
                     matching_keys.append(sub_key)
 
             if print_flag:
                 print(f'{key}:')
                 for mk in matching_keys:
                     print(f'\t{mk}: {self[key][mk]}')
-            
-            out.update({key:matching_keys})
+
+            out.update({key: matching_keys})
 
         return out
 
@@ -92,9 +93,9 @@ def parse_ascconv(buffer):
 
 def parse_xprot(buffer):
     xprot = {}
-    tokens = re.finditer(r'<Param(?:Bool|Long|String)\."(\w+)">\s*{([^}]*)',buffer)
-    tokensDouble = re.finditer(r'<ParamDouble\."(\w+)">\s*{\s*(<Precision>\s*[0-9]*)?\s*([^}]*)',buffer)
-    alltokens = chain(tokens,tokensDouble)
+    tokens = re.finditer(r'<Param(?:Bool|Long|String)\."(\w+)">\s*{([^}]*)', buffer)
+    tokensDouble = re.finditer(r'<ParamDouble\."(\w+)">\s*{\s*(<Precision>\s*[0-9]*)?\s*([^}]*)', buffer)
+    alltokens = chain(tokens, tokensDouble)
 
     for t in alltokens:
         # print(t.group(1))
@@ -170,7 +171,7 @@ def read_twix_hdr(fid, prot):
             rampdown_time = float(prot.Meas.alRegridRampdownTime.split(' ')[0])
             ixUp = np.where(time_adc < rampup_time)[0]
             ixFlat = np.setdiff1d(np.where(time_adc <= rampup_time + flattop_time)[0],
-                                 np.where(time_adc < rampup_time)[0])
+                                  np.where(time_adc < rampup_time)[0])
             ixDn = np.setdiff1d(np.setdiff1d(list(range(ncol)), ixFlat), ixUp)
             gr_adc[ixFlat] = 1
             if regrid_mode == 2:
@@ -186,8 +187,10 @@ def read_twix_hdr(fid, prot):
             # make sure that gr_adc is always positive (rstraj needs to be strictly monotonic)
             gr_adc = np.maximum(gr_adc, 1e-4)
             rstraj = (np.append(0, cumtrapz(gr_adc)) - ncol / 2) / np.sum(gr_adc)
-            rstraj -= np.mean(rstraj[int(ncol/2)-1:int(ncol/2)+1])
+            rstraj -= np.mean(rstraj[int(ncol / 2) - 1:int(ncol / 2) + 1])
             # scale rstraj by kmax (only works if all slices have same FoV!!!)
-            kmax = prot.MeasYaps[('sKSpace', 'lBaseResolution')] / prot.MeasYaps[('sSliceArray', 'asSlice', '0', 'dReadoutFOV')]
+            # TODO: these are examples of the keys not arranged correctly
+            kmax = prot.MeasYaps[('sKSpace', 'lBaseResolution')] / prot.MeasYaps[
+                ('sSliceArray', 'asSlice', '0', 'dReadoutFOV')]
             rstraj *= kmax
     return prot, rstraj

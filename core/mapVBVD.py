@@ -1,13 +1,13 @@
 import numpy as np
 from dataclasses import dataclass, field
-import mapVBVD as pkg
+import core as pkg
 from attrdict import AttrDict, AttrMap, AttrDefault
 from tqdm import tqdm, trange
-from mapVBVD.read_twix_hdr import read_twix_hdr
-from mapVBVD.twix_map_obj import twix_map_obj
+from .read_twix_hdr import read_twix_hdr, twix_hdr
+from .twix_map_obj import twix_map_obj
 
 
-def bitget(number, pos):
+def get_bit(number, pos):
     return (number >> pos) & 1
 
 
@@ -43,7 +43,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
 
     mdh_blob = np.zeros((byteMDH, 0), dtype=np.uint8)
     szBlob = mdh_blob.shape[1]  # pylint: disable=E1136  # pylint/issues/3139
-    filePos = np.zeros((0), dtype=float)
+    filePos = np.zeros(0, dtype=float)
 
     fid.seek(cPos, 0)
 
@@ -94,7 +94,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         if ((data_u8[0:3] == u8_000).all()) or (bitMask & bit_0):
 
             # ok, look closer if really all *4* bytes are 0
-            data_u8[3] = bitget(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
+            data_u8[3] = get_bit(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
             tmp = data_u8[0:4]
             tmp.dtype = np.uint32
             ulDMALength = float(tmp)
@@ -107,8 +107,8 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
                 # isEOF = True
                 break
 
-        if (bitMask & bit_5):  # MDH_SYNCDATA
-            data_u8[3] = bitget(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
+        if bitMask & bit_5:  # MDH_SYNCDATA
+            data_u8[3] = get_bit(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
             tmp = data_u8[0:4]
             tmp.dtype = np.uint32
             ulDMALength = float(tmp)
@@ -169,10 +169,10 @@ def evalMDH(mdh_blob, version):
 
     Nmeas = mdh_blob.shape[1]
 
-    ulPackBit = bitget(mdh_blob[3, :], 2)
+    ulPackBit = get_bit(mdh_blob[3, :], 2)
     ulPCI_rx = set_bit(mdh_blob[3, :], 7, False)  # keep 6 relevant bits
     ulPCI_rx = set_bit(ulPCI_rx, 8, False)
-    mdh_blob[3, :] = bitget(mdh_blob[3, :], 1)  # ubit24: keep only 1 bit from the 4th byte
+    mdh_blob[3, :] = get_bit(mdh_blob[3, :], 1)  # ubit24: keep only 1 bit from the 4th byte
 
     data_uint32 = np.ascontiguousarray(mdh_blob[0:76, :].transpose())
     data_uint32.dtype = np.uint32
@@ -240,6 +240,7 @@ def evalMDH(mdh_blob, version):
     mask.MDH_IMASCAN -= noImaScan
 
     return mdh, mask
+
 
 def mapVBVD(filename, quiet=False, **kwargs):
     if not quiet:
@@ -309,7 +310,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
         hdr_len = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
 
         currTwixObj = AttrDict()
-        currTwixObjHdr = AttrDict()
+        currTwixObjHdr = twix_hdr()
         # rstraj = 0
         # read header
         currTwixObjHdr, rstraj = read_twix_hdr(fid, currTwixObjHdr)
