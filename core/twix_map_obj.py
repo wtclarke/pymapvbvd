@@ -9,6 +9,19 @@ import logging
 
 class twix_map_obj:
 
+    
+    @property
+    def filename(self):
+        return self.fname
+               
+    @property
+    def rampSampTrj(self):
+        return self.rstrj
+
+    @property
+    def dataType(self):
+        return self.dType
+    
     @property
     def fullSize(self):
         if self.full_size is None:
@@ -27,11 +40,11 @@ class twix_map_obj:
             ix = self.dataDims.index('Col')
             out[ix] = self.NCol / 2
 
-        if self.flagAverageDim[0] | self.flagAverageDim[1]:
+        if self.average_dim[0] | self.average_dim[1]:
             print('averaging in col and cha dim not supported, resetting flag')
-            self.flagAverageDim[0:2] = False
+            self.average_dim[0:2] = False
 
-        out[self.flagAverageDim] = 1
+        out[self.average_dim] = 1
         return out
 
     @property
@@ -56,48 +69,56 @@ class twix_map_obj:
         self.removeOS = removeOS
 
     @property
+    def flagAverageDim(self):
+        return self.average_dim
+
+    @flagAverageDim.setter
+    def flagAverageDim(self, val):
+        self.average_dim = val
+
+    @property
     def flagDoAverage(self):
         ix = self.dataDims.index('Ave')
-        return self.flagAverageDim[ix]
+        return self.average_dim[ix]
 
     @flagDoAverage.setter
     def flagDoAverage(self, bval):
         ix = self.dataDims.index('Ave')
-        self.flagAverageDim[ix] = bval
+        self.average_dim[ix] = bval
 
     @property
     def flagAverageReps(self):
         ix = self.dataDims.index('Rep')
-        return self.flagAverageDim[ix]
+        return self.average_dim[ix]
 
     @flagAverageReps.setter
     def flagAverageReps(self, bval):
         ix = self.dataDims.index('Rep')
-        self.flagAverageDim[ix] = bval
+        self.average_dim[ix] = bval
 
     @property
     def flagAverageSets(self):
         ix = self.dataDims.index('Set')
-        return self.flagAverageDim[ix]
+        return self.average_dim[ix]
 
     @flagAverageSets.setter
     def flagAverageSets(self, bval):
         ix = self.dataDims.index('Set')
-        self.flagAverageDim[ix] = bval
+        self.average_dim[ix] = bval
 
     @property
     def flagIgnoreSeg(self):
         ix = self.dataDims.index('Seg')
-        return self.flagAverageDim[ix]
+        return self.average_dim[ix]
 
     @flagIgnoreSeg.setter
     def flagIgnoreSeg(self, bval):
         ix = self.dataDims.index('Seg')
-        self.flagAverageDim[ix] = bval
+        self.average_dim[ix] = bval
 
     @property
     def flagSkipToFirstLine(self):
-        return self.flagSkipToFirstLine
+        return self.skipToFirstLine
 
     @flagSkipToFirstLine.setter
     def flagSkipToFirstLine(self, bval):
@@ -120,11 +141,29 @@ class twix_map_obj:
 
     @flagRampSampRegrid.setter
     def flagRampSampRegrid(self, bval):
-        if bval and self.rampSampTrj is None:
+        if bval and self.rstrj is None:
             raise Exception('No trajectory for regridding available')
         self.regrid = bval
 
-    # TODO: flagDoRawDataCorrect, RawDataCorrectionFactors
+    # TODO: flagDoRawDataCorrect
+    @property
+    def flagDoRawDataCorrect(self):
+
+        return False
+
+    @flagDoRawDataCorrect.setter
+    def flagDoRawDataCorrect(self, bval):
+        pass
+
+    # TODO: RawDataCorrectionFactors
+    @property
+    def RawDataCorrectionFactors(self):
+        return []
+
+    @RawDataCorrectionFactors.setter
+    def RawDataCorrectionFactors(self, bval):
+        pass
+
 
     def __init__(self, dataType, fname, version, rstraj=None, **kwargs):
         self.ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
@@ -136,8 +175,8 @@ class twix_map_obj:
         self.ignoreSeg = kwargs.get('ignoreSeg', False)
         self.squeeze = kwargs.get('squeeze', False)
 
-        self.dataType = dataType.lower()
-        self.filename = fname
+        self.dType = dataType.lower()
+        self.fname = fname
         self.softwareVersion = version
 
         # self.IsReflected      = logical([]);
@@ -166,7 +205,7 @@ class twix_map_obj:
         else:
             raise ValueError('software version not supported')
 
-        self.rampSampTrj = rstraj
+        self.rstrj = rstraj
         if rstraj is None:
             self.regrid = False
 
@@ -225,20 +264,20 @@ class twix_map_obj:
         self.full_size = None
 
         # Flags
-        self.flagAverageDim = np.full(16, False, dtype=np.bool)
-        self.flagAverageDim[self.dataDims.index('Ave')] = self.doAverage
-        self.flagAverageDim[self.dataDims.index('Rep')] = self.averageReps
-        self.flagAverageDim[self.dataDims.index('Set')] = self.averageSets
-        self.flagAverageDim[self.dataDims.index('Seg')] = self.ignoreSeg
+        self.average_dim = np.full(16, False, dtype=np.bool)
+        self.average_dim[self.dataDims.index('Ave')] = self.doAverage
+        self.average_dim[self.dataDims.index('Rep')] = self.averageReps
+        self.average_dim[self.dataDims.index('Set')] = self.averageSets
+        self.average_dim[self.dataDims.index('Seg')] = self.ignoreSeg
 
-        if self.dataType == 'image' or self.dataType == 'phasestab':
+        if self.dType == 'image' or self.dType == 'phasestab':
             self.skipToFirstLine = False
         else:
             self.skipToFirstLine = True
 
     def __str__(self):
         des_str = ('***twix_map_obj***\n'
-                   f'File: {self.filename}\n'
+                   f'File: {self.fname}\n'
                    f'Software: {self.softwareVersion}\n'
                    f'Number of acquisitions read {self.NAcq}\n'
                    f'Data size is {np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")}\n'
@@ -380,7 +419,7 @@ class twix_map_obj:
         if self.NCha.ndim > 0:
             self.NCha = self.NCha[0]
 
-        if self.dataType == 'refscan':
+        if self.dType == 'refscan':
             # pehses: check for lines with 'negative' line/partition numbers
             # this can happen when the reference scan line/partition range
             # exceeds the one of the actual imaging scan
@@ -477,7 +516,7 @@ class twix_map_obj:
             selRangeSz[idx] = k.size
 
         # now select all indices for the dims that are averaged
-        for iDx, k in enumerate(np.nditer(self.flagAverageDim)):
+        for iDx, k in enumerate(np.nditer(self.average_dim)):
             if k:
                 self.clean()
                 selRange[iDx] = np.arange(0, self.fullSize[iDx])
@@ -553,33 +592,33 @@ class twix_map_obj:
         # calculate ixToTarg for possibly smaller, shifted + segmented
         # target matrix:
         cIx = np.zeros((14, ixToRaw.size), dtype=int)
-        if ~self.flagAverageDim[2]:
+        if ~self.average_dim[2]:
             cIx[0, :] = self.Lin[ixToRaw] - self.skipLin
-        if ~self.flagAverageDim[3]:
+        if ~self.average_dim[3]:
             cIx[1, :] = self.Par[ixToRaw] - self.skipPar
-        if ~self.flagAverageDim[4]:
+        if ~self.average_dim[4]:
             cIx[2, :] = self.Sli[ixToRaw]
-        if ~self.flagAverageDim[5]:
+        if ~self.average_dim[5]:
             cIx[3, :] = self.Ave[ixToRaw]
-        if ~self.flagAverageDim[6]:
+        if ~self.average_dim[6]:
             cIx[4, :] = self.Phs[ixToRaw]
-        if ~self.flagAverageDim[7]:
+        if ~self.average_dim[7]:
             cIx[5, :] = self.Eco[ixToRaw]
-        if ~self.flagAverageDim[8]:
+        if ~self.average_dim[8]:
             cIx[6, :] = self.Rep[ixToRaw]
-        if ~self.flagAverageDim[9]:
+        if ~self.average_dim[9]:
             cIx[7, :] = self.Set[ixToRaw]
-        if ~self.flagAverageDim[10]:
+        if ~self.average_dim[10]:
             cIx[8, :] = self.Seg[ixToRaw]
-        if ~self.flagAverageDim[11]:
+        if ~self.average_dim[11]:
             cIx[9, :] = self.Ida[ixToRaw]
-        if ~self.flagAverageDim[12]:
+        if ~self.average_dim[12]:
             cIx[10, :] = self.Idb[ixToRaw]
-        if ~self.flagAverageDim[13]:
+        if ~self.average_dim[13]:
             cIx[11, :] = self.Idc[ixToRaw]
-        if ~self.flagAverageDim[14]:
+        if ~self.average_dim[14]:
             cIx[12, :] = self.Idd[ixToRaw]
-        if ~self.flagAverageDim[15]:
+        if ~self.average_dim[15]:
             cIx[13, :] = self.Ide[ixToRaw]
         # import pdb; pdb.set_trace()
 
@@ -627,7 +666,7 @@ class twix_map_obj:
         return N.astype(idxClass)
 
     def _fileopen(self):
-        fid = open(self.filename, 'rb')
+        fid = open(self.fname, 'rb')
         return fid
 
     def readData(self, mem, cIxToTarg=None, cIxToRaw=None, selRange=None, selRangeSz=None, outSize=None):
@@ -665,7 +704,7 @@ class twix_map_obj:
         keepOS = np.concatenate([list(range(int(self.NCol / 4))), list(range(int(self.NCol * 3 / 4), int(self.NCol)))])
 
         bIsReflected = self.IsReflected[cIxToRaw]
-        bRegrid = self.regrid and self.rampSampTrj.size > 1
+        bRegrid = self.regrid and self.rstrj.size > 1
         slicedata = self.slicePos[cIxToRaw, :]
         ro_shift = self.ROoffcenter[cIxToRaw] * int(not self.ignoreROoffcenter)
         # %SRY store information about raw data correction
@@ -697,8 +736,8 @@ class twix_map_obj:
 
         if bRegrid:
             v1 = np.array(range(1, selRangeSz[1] * blockSz + 1))
-            rsTrj = [self.rampSampTrj, v1]
-            trgTrj = np.linspace(np.min(self.rampSampTrj), np.max(self.rampSampTrj), int(self.NCol))
+            rsTrj = [self.rstrj, v1]
+            trgTrj = np.linspace(np.min(self.rstrj), np.max(self.rstrj), int(self.NCol))
             trgTrj = [trgTrj, v1]
 
         # counter for proper scaling of averages/segments
