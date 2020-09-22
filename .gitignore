@@ -1,4 +1,13 @@
-__*
 .ipynb_checkpoints
 *.ipynb
 *.code-workspace
+build
+dist
+*.egg-info
+__pycache__
+.DS_Store
+.idea/*
+test.py
+.gitignore
+.idea/*
+test.py

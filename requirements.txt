@@ -1,1 +1,8 @@
-numpy
+numpy~=1.18.3
+attrdict~=2.0.1
+tqdm~=4.45.0
+
+dataclasses~=0.7
+scipy~=1.4.1
+matplotlib~=3.2.1
+setuptools~=46.1.3
