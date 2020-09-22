@@ -9,3 +9,5 @@ __pycache__
 .idea/*
 test.py
 .gitignore
+.idea/*
+test.py
