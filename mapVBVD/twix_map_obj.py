@@ -129,6 +129,7 @@ class twix_map_obj:
         self.averageReps = kwargs.get('averageReps', False)
         self.averageSets = kwargs.get('averageSets', False)
         self.ignoreSeg = kwargs.get('ignoreSeg', False)
+        self.squeeze = kwargs.get('squeeze', False)
 
         self.dataType = dataType.lower()
         self.filename = fname
@@ -236,7 +237,7 @@ class twix_map_obj:
                    f'Software: {self.softwareVersion}\n'
                    f'Number of acquisitions read {self.NAcq}\n'
                    f'Data size is {np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")}\n'
-                   f'Squeezed data size is {np.array2string(self.sqzSize(), formatter={"int": lambda x: "%i" % x}, separator=",")} ({self.sqzDims()})\n'
+                   f'Squeezed data size is {np.array2string(self.sqzSize, formatter={"int": lambda x: "%i" % x}, separator=",")} ({self.sqzDims})\n'
                    f'NCol = {self.NCol:0.0f}\n'
                    f'NCha = {self.NCha:0.0f}\n'
                    f'NLin  = {self.NLin:0.0f}\n'
@@ -344,11 +345,11 @@ class twix_map_obj:
         nack = self.NAcq
         idx = np.arange(0, nack - 1)
 
-        for f in fields:
-            curr = getattr(self, f)
-            if curr.shape[0] > nack:  # rarely
-                print('Here')
-                setattr(self, f, curr[idx])  # 1st dim: samples,  2nd dim acquisitions
+        # for f in fields:
+        #     curr = getattr(self, f)
+        #     if curr.shape[0] > nack:  # rarely
+        #         print('Here')
+        #         setattr(self, f, curr[idx])  # 1st dim: samples,  2nd dim acquisitions
 
         self.NLin = np.max(self.Lin) + 1  # +1 so that size isn't 0
         self.NPar = np.max(self.Par) + 1
@@ -461,7 +462,7 @@ class twix_map_obj:
 
                 outSize[k] = selRange[cDim].size
 
-            for r, s in zip(selRange, self.dataSize()):
+            for r, s in zip(selRange, self.dataSize):
                 if np.max(r) > s:
                     raise Exception('selection out of range')
             # To implement indexing
@@ -629,21 +630,21 @@ class twix_map_obj:
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [np.arange(0, self.dataSize()[0]).astype(int), np.arange(0, self.dataSize()[1]).astype(
+                selRange = [np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(
                     int)]  # [slice(None,None,None),slice(None,None,None)]
             else:
-                selRange[0] = np.arange(0, self.dataSize()[0]).astype(int)  # slice(None,None,None)
-                selRange[1] = np.arange(0, self.dataSize()[0]).astype(int)  # slice(None,None,None)
+                selRange[0] = np.arange(0, self.dataSize[0]).astype(int)  # slice(None,None,None)
+                selRange[1] = np.arange(0, self.dataSize[0]).astype(int)  # slice(None,None,None)
 
-            outSize = np.append(self.dataSize()[0:2], mem.size).astype(int)
+            outSize = np.append(self.dataSize[0:2], mem.size).astype(int)
             selRangeSz = outSize
             cIxToTarg = np.arange(0, selRangeSz[2])
             cIxToRaw = cIxToTarg
-        # else:
-        #     if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
-        #         selRange[0] = slice(None,None,None)
-        #     if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
-        #         selRange[1] = slice(None,None,None)          
+        else:
+            if np.array_equiv(selRange[0], np.arange(0, self.dataSize[0]).astype(int)):
+                selRange[0] = slice(None, None, None)
+            if np.array_equiv(selRange[1], np.arange(0, self.dataSize[1]).astype(int)):
+                selRange[1] = slice(None, None, None)
 
         out = np.zeros(outSize, dtype=np.csingle)
         out = out.reshape((selRangeSz[0], selRangeSz[1], -1))
@@ -867,7 +868,4 @@ class twix_map_obj:
 
         out = np.ascontiguousarray(out.reshape(outSize))
 
-        if self.squeeze:
-            out = np.squeeze(out)
-
-        return out
+        return out if not self.squeeze else np.squeeze(out)

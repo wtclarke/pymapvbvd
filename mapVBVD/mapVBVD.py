@@ -1,8 +1,10 @@
 import numpy as np
 from dataclasses import dataclass, field
-from core import mapVBVD as pkg
+import mapVBVD as pkg
 from attrdict import AttrDict, AttrMap, AttrDefault
 from tqdm import tqdm, trange
+from mapVBVD.read_twix_hdr import read_twix_hdr
+from mapVBVD.twix_map_obj import twix_map_obj
 
 
 def bitget(number, pos):
@@ -18,7 +20,7 @@ def set_bit(v, index, x):
     return v  # Return the result, we're done.
 
 
-def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength):
+def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog=True):
     if version == 'vb':
         isVD = False
         byteMDH = 128
@@ -237,6 +239,7 @@ def evalMDH(mdh_blob, version):
 
     mask.MDH_IMASCAN -= noImaScan
 
+    return mdh, mask
 
 def mapVBVD(filename, quiet=False, **kwargs):
     if not quiet:
