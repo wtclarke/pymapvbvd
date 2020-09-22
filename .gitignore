@@ -2,3 +2,5 @@ __*
 .ipynb_checkpoints
 *.ipynb
 *.code-workspace
+.idea/*
+test.py
