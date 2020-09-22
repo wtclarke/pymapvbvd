@@ -147,7 +147,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
 
     t.close()
 
-    if isEOF:
+    if isEOF or n_acq == len(filePos):
         n_acq = n_acq - 1  # ignore the last attempt
     # import pdb; pdb.set_trace()
     filePos[n_acq] = cPos
