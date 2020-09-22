@@ -5,6 +5,8 @@ from core import mapVBVD
 test_data_vb = op.join(op.dirname(__file__), 'test_data', 'meas_MID311_STEAM_wref1_FID115674.dat')
 test_data_ve = op.join(op.dirname(__file__), 'test_data', 'meas_MID00305_FID74175_VOI_slaser_wref1.dat')
 test_data_vb_broken = op.join(op.dirname(__file__), 'test_data', 'meas_MID111_sLaser_broken_FID4873.dat')
+test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00058_FID12358_gre_3D.dat')
+test_data_epi = op.join(op.dirname(__file__), 'test_data', 'meas_MID00053_FID12353_ep2d_QA_2mm_15ch_inplane_Grappa2_100.dat')
 
 
 def test_vb():
@@ -41,3 +43,4 @@ def test_vb_broken():
     assert ('sTXSPEC', 'asNucleusInfo', '0', 'tNucleus') in keys['MeasYaps']
     key_value = twixObj.search_header_for_val('MeasYaps', ('sTXSPEC', 'asNucleusInfo', '0', 'tNucleus'))
     assert key_value[0] == '"1H"'
+

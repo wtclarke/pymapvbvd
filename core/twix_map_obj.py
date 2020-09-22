@@ -9,7 +9,6 @@ import logging
 
 class twix_map_obj:
 
-    
     @property
     def filename(self):
         return self.fname
