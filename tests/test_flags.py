@@ -13,6 +13,5 @@ test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00058_FID123
 def test_flagRemoveOS():
     twixObj = mapVBVD(test_data_gre, quiet=False)
     twixObj[1].image.flagRemoveOS = False
-    assert np.allclose(twixObj.image.fullSize, [4096, 32, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1])
 
-test_flagRemoveOS()
+    assert np.allclose(twixObj.image.fullSize, [4096, 32, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1])
