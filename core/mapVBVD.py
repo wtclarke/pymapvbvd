@@ -65,8 +65,10 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         dmaOff = 0
         dmaSkip = byteMDH
 
-    t = tqdm(total=np.float(str('%8.1f' % (measLength / 1024 ** 2))),
-             desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
+    if print_prog:
+        last_progress = 0
+        t = tqdm(total=measLength, unit='B', unit_scale=True, unit_divisor=1024,
+                 desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
     while True:
         #         Read mdh as binary (uint8) and evaluate as little as possible to know...
         #           ... where the next mdh is (ulDMALength / ushSamplesInScan & ushUsedChannels)
@@ -141,11 +143,13 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         mdh_blob[:, n_acq - 1] = data_u8
         filePos[n_acq - 1] = cPos
 
-        t.update(np.float(str('%8.1f' % (cPos / 1024 ** 2))))
+        if print_prog:
+            curr_progress = cPos
+            progress = curr_progress - last_progress
+            t.update(progress)
+            last_progress = curr_progress
 
         cPos = cPos + ulDMALength
-
-    t.close()
 
     if isEOF or n_acq == len(filePos):
         n_acq = n_acq - 1  # ignore the last attempt

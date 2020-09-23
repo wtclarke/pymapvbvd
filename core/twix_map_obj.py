@@ -12,7 +12,7 @@ class twix_map_obj:
     @property
     def filename(self):
         return self.fname
-               
+
     @property
     def rampSampTrj(self):
         return self.rstrj
@@ -20,7 +20,7 @@ class twix_map_obj:
     @property
     def dataType(self):
         return self.dType
-    
+
     @property
     def fullSize(self):
         if self.full_size is None:
@@ -30,7 +30,7 @@ class twix_map_obj:
     # @fullSize.setter
     # def fullSize(self, val):
     #     self.full_size = val
-        
+
     @property
     def dataSize(self):
         out = self.fullSize.copy()
@@ -162,7 +162,6 @@ class twix_map_obj:
     @RawDataCorrectionFactors.setter
     def RawDataCorrectionFactors(self, bval):
         pass
-
 
     def __init__(self, dataType, fname, version, rstraj=None, **kwargs):
         self.ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
@@ -673,9 +672,9 @@ class twix_map_obj:
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [slice(None,None,None),slice(None,None,None)]
-                #[np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(int)]
-                      # [slice(None,None,None),slice(None,None,None)]
+                selRange = [slice(None, None, None), slice(None, None, None)]
+                # [np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(int)]
+                # [slice(None,None,None),slice(None,None,None)]
             else:
                 selRange[0] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
                 selRange[1] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
