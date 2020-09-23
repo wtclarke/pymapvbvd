@@ -8,8 +8,8 @@ import numpy as np
 from core import mapVBVD
 
 test_data_vb_broken = op.join(op.dirname(__file__), 'test_data', 'meas_MID111_sLaser_broken_FID4873.dat')
-test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00058_FID12358_gre_3D.dat')
-test_data_epi = op.join(op.dirname(__file__), 'test_data', 'meas_MID00053_FID12353_ep2d_QA_2mm_15ch_inplane_Grappa2_100.dat')
+test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00255_FID12798_GRE_surf.dat')
+test_data_epi = op.join(op.dirname(__file__), 'test_data', 'meas_MID00265_FID12808_FMRI.dat')
 
 
 def test_flagRemoveOS():
@@ -30,17 +30,17 @@ def test_flagRemoveOS():
 def test_flagIgnoreSeg_flagDoAverage():
     twixObj = mapVBVD(test_data_epi, quiet=False)
 
-    twixObj[1].refscan_phasecor.flagIgnoreSeg = False
-    twixObj[1].refscan_phasecor.flagDoAverage = False
-    assert np.allclose(twixObj[1].refscan_phasecor.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
-    twixObj[1].refscan_phasecor.flagDoAverage = True
-    assert np.allclose(twixObj[1].refscan_phasecor.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    twixObj[1].refscanPC.flagIgnoreSeg = False
+    twixObj[1].refscanPC.flagDoAverage = False
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    twixObj[1].refscanPC.flagDoAverage = True
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
 
-    twixObj[1].refscan_phasecor.flagIgnoreSeg = True
-    twixObj[1].refscan_phasecor.flagDoAverage = False
-    assert np.allclose(twixObj[1].refscan_phasecor.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-    twixObj[1].refscan_phasecor.flagDoAverage = True
-    assert np.allclose(twixObj[1].refscan_phasecor.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    twixObj[1].refscanPC.flagIgnoreSeg = True
+    twixObj[1].refscanPC.flagDoAverage = False
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    twixObj[1].refscanPC.flagDoAverage = True
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
 
 def test_flagSkipToFirstLine():
@@ -50,5 +50,3 @@ def test_flagSkipToFirstLine():
     assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 55, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
     twixObj[1].refscan.flagSkipToFirstLine = True
     assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 24, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
-
-test_flagIgnoreSeg_flagDoAverage()
