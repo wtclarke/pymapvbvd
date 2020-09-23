@@ -50,3 +50,5 @@ def test_flagSkipToFirstLine():
     assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 55, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
     twixObj[1].refscan.flagSkipToFirstLine = True
     assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 24, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+
+test_flagIgnoreSeg_flagDoAverage()

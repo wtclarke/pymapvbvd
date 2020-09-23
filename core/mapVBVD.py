@@ -329,7 +329,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
         currTwixObj.update({'phasestab_ref0': mytmo('phasestab_ref0')})
         currTwixObj.update({'phasestab_ref1': mytmo('phasestab_ref1')})
         currTwixObj.update({'refscan': mytmo('refscan')})
-        currTwixObj.update({'refscan_phasecor': mytmo('refscan_phasecor')})
+        currTwixObj.update({'refscanPC': mytmo('refscanPC')})
         currTwixObj.update({'refscan_phasestab': mytmo('refscan_phasestab')})
         currTwixObj.update({'refscan_phasestab_ref0': mytmo('refscan_phasestab_ref0')})
         currTwixObj.update({'refscan_phasestab_ref1': mytmo('refscan_phasestab_ref1')})
@@ -410,9 +410,9 @@ def mapVBVD(filename, quiet=False, **kwargs):
         isCurrScan = mask.MDH_PHASCOR & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
-            currTwixObj.refscan_phasecor.readMDH(mdh, filePos, isCurrScan)
+            currTwixObj.refscanPC.readMDH(mdh, filePos, isCurrScan)
         else:
-            currTwixObj.pop('refscan_phasecor', None)
+            currTwixObj.pop('refscanPC', None)
 
         # phasestab MDH_PHASESTABSCAN
         isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN) & (
