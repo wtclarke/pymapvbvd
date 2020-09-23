@@ -1,9 +1,10 @@
-numpy~=1.18.3
-attrdict~=2.0.1
-tqdm~=4.45.0
+numpy
+attrdict
+tqdm
 
-dataclasses~=0.7
-scipy~=1.4.1
-matplotlib~=3.2.1
-setuptools~=46.1.3
-pytest==5.3.5
+dataclasses
+scipy
+matplotlib
+setuptools
+pytest
+h5py

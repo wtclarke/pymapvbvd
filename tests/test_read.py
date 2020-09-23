@@ -5,7 +5,7 @@ Created by shahdloo
 
 import os.path as op
 import numpy as np
-from core import mapVBVD
+from mapvbvd import mapVBVD
 import h5py
 
 test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00255_FID12798_GRE_surf.dat')

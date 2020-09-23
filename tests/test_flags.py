@@ -5,7 +5,7 @@ Created by shahdloo
 
 import os.path as op
 import numpy as np
-from core import mapVBVD
+from mapvbvd import mapVBVD
 
 test_data_vb_broken = op.join(op.dirname(__file__), 'test_data', 'meas_MID111_sLaser_broken_FID4873.dat')
 test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00255_FID12798_GRE_surf.dat')

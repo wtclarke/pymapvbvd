@@ -1,6 +1,6 @@
 import os.path as op
 import numpy as np
-from core import mapVBVD
+from mapvbvd import mapVBVD
 
 test_data_vb = op.join(op.dirname(__file__), 'test_data', 'meas_MID311_STEAM_wref1_FID115674.dat')
 test_data_ve = op.join(op.dirname(__file__), 'test_data', 'meas_MID00305_FID74175_VOI_slaser_wref1.dat')
