@@ -15,9 +15,9 @@ test_data_epi = op.join(op.dirname(__file__), 'test_data', 'meas_MID00265_FID128
 def test_flagRemoveOS():
     twixObj = mapVBVD(test_data_gre, quiet=False)
     twixObj[1].image.flagRemoveOS = False
-    assert np.allclose(twixObj[1].image.dataSize, [256, 15, 128, 96, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].image.dataSize, [256,  16, 128,   1,   5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     twixObj[1].image.flagRemoveOS = True
-    assert np.allclose(twixObj[1].image.dataSize, [128, 15, 128, 96, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].image.dataSize, [128,  16, 128,   1,   5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
     # broken file
     twixObj = mapVBVD(test_data_vb_broken, quiet=False)
@@ -32,21 +32,21 @@ def test_flagIgnoreSeg_flagDoAverage():
 
     twixObj[1].refscanPC.flagIgnoreSeg = False
     twixObj[1].refscanPC.flagDoAverage = False
-    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [110,  16,   1,   1,   5, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
     twixObj[1].refscanPC.flagDoAverage = True
-    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [110,  16,   1,   1,   5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
 
     twixObj[1].refscanPC.flagIgnoreSeg = True
     twixObj[1].refscanPC.flagDoAverage = False
-    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [110,  16,   1,   1,   5, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     twixObj[1].refscanPC.flagDoAverage = True
-    assert np.allclose(twixObj[1].refscanPC.dataSize, [86, 15, 1, 1, 36, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscanPC.dataSize, [110,  16,   1,   1,   5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
 
 def test_flagSkipToFirstLine():
     twixObj = mapVBVD(test_data_epi, quiet=False)
 
     twixObj[1].refscan.flagSkipToFirstLine = False
-    assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 55, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscan.dataSize, [110,  16,  82,   1,   5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
     twixObj[1].refscan.flagSkipToFirstLine = True
-    assert np.allclose(twixObj[1].refscan.dataSize, [86, 15, 24, 1, 36, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj[1].refscan.dataSize, [110,  16,  54,   1,   5, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1])
