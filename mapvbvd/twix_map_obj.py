@@ -467,7 +467,7 @@ class twix_map_obj:
         selRange = [np.zeros(1, dtype=int)] * self.dataSize.size
         outSize = np.ones(self.dataSize.shape, dtype=int)
 
-        bSqueeze = False
+        bSqueeze = self.squeeze
         if S is None or S is slice(None, None, None):
             # shortcut to select all data
             for k in range(0, self.dataSize.size):
@@ -672,27 +672,26 @@ class twix_map_obj:
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [slice(None, None, None), slice(None, None, None)]
-                # [np.arange(0, self.dataSize[0]).astype(int), np.arange(0, self.dataSize[1]).astype(int)]
-                # [slice(None,None,None),slice(None,None,None)]
+                selRange = [np.arange(0,self.dataSize[0]).astype(int),
+                            np.arange(0,self.dataSize[1]).astype(int)]
             else:
-                selRange[0] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
-                selRange[1] = np.arange(self.dataSize[0]).astype(int)  # slice(None,None,None)
+                selRange[0] = np.arange(0,self.dataSize[0]).astype(int) 
+                selRange[1] = np.arange(0,self.dataSize[0]).astype(int)
 
-            outSize = np.append(self.dataSize[0:2], mem.size).astype(int)
+            outSize = np.concatenate((self.dataSize[0:2],mem.shape)).astype(int)
             selRangeSz = outSize
-            cIxToTarg = np.arange(0, selRangeSz[2])
-            cIxToRaw = cIxToTarg
-        else:
-            if np.array_equiv(selRange[0], np.arange(self.dataSize[0]).astype(int)):
-                selRange[0] = slice(None, None, None)
-            if np.array_equiv(selRange[1], np.arange(self.dataSize[1]).astype(int)):
-                selRange[1] = slice(None, None, None)
+            cIxToTarg = np.arange(0,selRangeSz[2])
+            cIxToRaw  = cIxToTarg
+        # else:
+        #     if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
+        #         selRange[0] = slice(None,None,None)
+        #     if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
+        #         selRange[1] = slice(None,None,None)          
 
-        out = np.zeros(outSize, dtype=np.csingle)
-        out = out.reshape((selRangeSz[0], selRangeSz[1], -1))
-
-        cIxToTarg = twix_map_obj.cast2MinimalUint(cIxToTarg)  # Possibly not needed
+        out = np.zeros(outSize,dtype = np.csingle)
+        out= out.reshape( (selRangeSz[0], selRangeSz[1],-1))
+        
+        cIxToTarg = twix_map_obj.cast2MinimalUint(cIxToTarg) # Possibly not needed
 
         # These parameters were copied for speed in matlab, but just duplicate to keep code similar in python
         szScanHeader = self.freadInfo.szScanHeader
@@ -829,23 +828,23 @@ class twix_map_obj:
                 # TODO: average across 1st and 2nd dims
                 # import pdb; pdb.set_trace()
 
-                if (selRange[0] != slice(None, None, None) if isinstance(selRange[0], slice)
-                else selRange[0].any() != slice(None, None, None)) or \
-                        (selRange[1] != slice(None, None, None) if isinstance(selRange[1], slice)
-                        else selRange[1].any() != slice(None, None, None)):
-                    if (selRange[0] == slice(None, None, None) if isinstance(selRange[0], slice)
-                    else False):
-                        cur1stDim = block.shape[0]
-                    else:
-                        cur1stDim = selRange[0].size
-                    if (selRange[1] == slice(None, None, None) if isinstance(selRange[1], slice)
-                    else False):
-                        cur2ndDim = block.shape[1]
-                    else:
-                        cur2ndDim = selRange[0].size
-                    cur3rdDim = block.shape[2]
-                    block = block[selRange[0], selRange[1], :].reshape(
-                        (cur1stDim, cur2ndDim, cur3rdDim))  # Force keeping 3rd dim
+                # WTC whilst still using slices rather than just arrays.
+                # if (not isinstance(selRange[0],slice)) or (not isinstance(selRange[1],slice)):
+                # if isinstance(selRange[0],slice) and (selRange[0]==slice(None,None,None)):
+                #     cur1stDim = block.shape[0]
+                # else:
+                #     cur1stDim = selRange[0].size
+                # if isinstance(selRange[1],slice) and (selRange[1]==slice(None,None,None)):
+                #     cur2ndDim = block.shape[1]
+                # else:
+                #     cur2ndDim = selRange[1].size
+
+                cur1stDim = selRange[0].size
+                cur2ndDim = selRange[1].size
+                cur3rdDim = block.shape[2]
+                block = block[selRange[0][:, np.newaxis],
+                              selRange[1][np.newaxis, :],
+                              :].reshape((cur1stDim, cur2ndDim, cur3rdDim))
 
                 toSort = cIxToTarg[ix]
                 I = np.argsort(toSort)

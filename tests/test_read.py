@@ -18,9 +18,9 @@ def test_gre():
     twixObj = mapVBVD(test_data_gre, quiet=False)
     twixObj[1].image.squeeze = True
     twixObj[1].image.flagRemoveOS = False
-    img_py = twixObj[1].image[:, :, :, 0, 0, 0, :]
+    img_py = twixObj[1].image[:, :, :, 0]
     twixObj[1].image.flagRemoveOS = True
-    img_py_os = twixObj[1].image[:, :, :, 0, 0, 0, :]
+    img_py_os = twixObj[1].image[:, :, :, 0]
 
     with h5py.File(test_data_gre_mat, 'r') as f:
         base = f['img'][0, 0, :, :, :]
@@ -37,11 +37,11 @@ def test_epi():
     twixObj[1].image.squeeze = True
     twixObj[1].image.flagRampSampRegrid = False
     twixObj[1].image.flagRemoveOS = False
-    img_py = twixObj[1].image[:, :, :, 0, 0, 0, 0, 0, 0, 0, 0, 0, :]
+    img_py = twixObj[1].image[:, :, :, 0, 0, 0]
     twixObj[1].image.flagRemoveOS = True
-    img_py_os = twixObj[1].image[:, :, :, 0, 0, 0, 0, 0, 0, 0, 0, 0, :]
+    img_py_os = twixObj[1].image[:, :, :, 0, 0, 0]
     twixObj[1].image.flagRampSampRegrid = True
-    img_py_os_rg = twixObj[1].image[:, :, :, 0, 0, 0, 0, 0, 0, 0, 0, 0, :]
+    img_py_os_rg = twixObj[1].image[:, :, :, 0, 0, 0]
 
     with h5py.File(test_data_epi_mat, 'r') as f:
         base = f['img'][0, 0, 0, 0, 0, 0, 0, 0, :, :, :]
