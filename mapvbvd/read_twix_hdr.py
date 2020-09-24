@@ -9,6 +9,15 @@ class twix_hdr(AttrDict):
     def __init__(self, *args):
         super().__init__(*args)
 
+    def __str__(self):
+        keystr = '\n'.join([k for k in self.keys()])
+        des_str = ('***twix_hdr***\n'
+                   f'Top level data structures: \n{keystr}\n')
+        return des_str
+
+    def __repr__(self):
+        return str(self)
+
     @staticmethod
     def search_using_tuple(s_terms, key, regex=True):
         if regex:
