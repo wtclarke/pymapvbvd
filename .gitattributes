@@ -1,1 +1,2 @@
 mapVBVD/_version.py export-subst
+*.dat filter=lfs diff=lfs merge=lfs -text
