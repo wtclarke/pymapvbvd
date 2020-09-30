@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass, field
 import mapvbvd as pkg
 from attrdict import AttrDict, AttrMap, AttrDefault
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 from .read_twix_hdr import read_twix_hdr, twix_hdr
 from .twix_map_obj import twix_map_obj
 
