@@ -3,7 +3,7 @@ import numpy as np
 from scipy.interpolate import griddata
 import copy
 import time
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 import logging
 
 
