@@ -1,8 +1,10 @@
+from dataclasses import dataclass
+
 import numpy as np
-from dataclasses import dataclass, field
+from attrdict import AttrDict
+from tqdm.auto import tqdm
+
 import mapvbvd as pkg
-from attrdict import AttrDict, AttrMap, AttrDefault
-from tqdm.auto import tqdm, trange
 from .read_twix_hdr import read_twix_hdr, twix_hdr
 from .twix_map_obj import twix_map_obj
 
