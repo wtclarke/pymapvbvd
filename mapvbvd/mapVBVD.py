@@ -1,8 +1,10 @@
+from dataclasses import dataclass
+
 import numpy as np
-from dataclasses import dataclass, field
+from attrdict import AttrDict
+from tqdm.auto import tqdm
+
 import mapvbvd as pkg
-from attrdict import AttrDict, AttrMap, AttrDefault
-from tqdm.auto import tqdm, trange
 from .read_twix_hdr import read_twix_hdr, twix_hdr
 from .twix_map_obj import twix_map_obj
 
@@ -68,7 +70,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
     if print_prog:
         last_progress = 0
         t = tqdm(total=measLength, unit='B', unit_scale=True, unit_divisor=1024,
-                 desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=True)
+                 desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=False)
     while True:
         #         Read mdh as binary (uint8) and evaluate as little as possible to know...
         #           ... where the next mdh is (ulDMALength / ushSamplesInScan & ushUsedChannels)

@@ -1,10 +1,19 @@
-from dataclasses import dataclass, field
-import numpy as np
-from scipy.interpolate import griddata
 import copy
-import time
-from tqdm.auto import tqdm, trange
 import logging
+import time
+from dataclasses import dataclass
+
+import numpy as np
+from scipy.interpolate import RectBivariateSpline
+from tqdm.auto import trange
+
+
+def complex_interp(src_grid, xi, yi, z):
+    interpolator_r = RectBivariateSpline(src_grid[0], src_grid[1], z.real)
+    interpolator_i = RectBivariateSpline(src_grid[0], src_grid[1], z.imag)
+    zz_r = interpolator_r(xi, yi)
+    zz_i = interpolator_i(xi, yi)
+    return zz_r + 1j*zz_i
 
 
 class twix_map_obj:
@@ -483,7 +492,7 @@ class twix_map_obj:
                     cDim = k  # nothing to do
                 else:
                     # we need to rearrange selRange from squeezed
-                    # to original order                    
+                    # to original order
                     for i, x in enumerate(self.dataDims):
                         if x == self.sqzDims[k]:
                             cDim = i
@@ -556,7 +565,7 @@ class twix_map_obj:
         return out
 
     # Replicate matlab subscripting
-    # Overloads [] 
+    # Overloads []
     def __getitem__(self, key=None):
         # print(f'In [], key is {key}.')
         # import pdb; pdb.set_trace()
@@ -672,26 +681,26 @@ class twix_map_obj:
         mem = mem.astype(int)
         if outSize is None:
             if selRange is None:
-                selRange = [np.arange(0,self.dataSize[0]).astype(int),
-                            np.arange(0,self.dataSize[1]).astype(int)]
+                selRange = [np.arange(0, self.dataSize[0]).astype(int),
+                            np.arange(0, self.dataSize[1]).astype(int)]
             else:
-                selRange[0] = np.arange(0,self.dataSize[0]).astype(int) 
-                selRange[1] = np.arange(0,self.dataSize[0]).astype(int)
+                selRange[0] = np.arange(0, self.dataSize[0]).astype(int)
+                selRange[1] = np.arange(0, self.dataSize[0]).astype(int)
 
-            outSize = np.concatenate((self.dataSize[0:2],mem.shape)).astype(int)
+            outSize = np.concatenate((self.dataSize[0:2], mem.shape)).astype(int)
             selRangeSz = outSize
-            cIxToTarg = np.arange(0,selRangeSz[2])
-            cIxToRaw  = cIxToTarg
+            cIxToTarg = np.arange(0, selRangeSz[2])
+            cIxToRaw = cIxToTarg
         # else:
         #     if np.array_equiv(selRange[0],np.arange(0,self.dataSize()[0]).astype(int)):
         #         selRange[0] = slice(None,None,None)
         #     if np.array_equiv(selRange[1],np.arange(0,self.dataSize()[1]).astype(int)):
-        #         selRange[1] = slice(None,None,None)          
+        #         selRange[1] = slice(None,None,None)
 
-        out = np.zeros(outSize,dtype = np.csingle)
-        out= out.reshape( (selRangeSz[0], selRangeSz[1],-1))
-        
-        cIxToTarg = twix_map_obj.cast2MinimalUint(cIxToTarg) # Possibly not needed
+        out = np.zeros(outSize, dtype=np.csingle)
+        out = out.reshape((selRangeSz[0], selRangeSz[1], -1))
+
+        cIxToTarg = twix_map_obj.cast2MinimalUint(cIxToTarg)  # Possibly not needed
 
         # These parameters were copied for speed in matlab, but just duplicate to keep code similar in python
         szScanHeader = self.freadInfo.szScanHeader
@@ -730,7 +739,7 @@ class twix_map_obj:
         blockCtr = 0
         blockInit = np.full((readShape[0], readShape[1], blockSz), -np.inf, dtype=np.csingle)  # init with garbage
         block = copy.deepcopy(blockInit)
-
+        sz = 0
         if bRegrid:
             v1 = np.array(range(1, selRangeSz[1] * blockSz + 1))
             rsTrj = [self.rstrj, v1]
@@ -759,7 +768,7 @@ class twix_map_obj:
                 import warnings
                 warnstring = f'An unexpected read error occurred at this byte offset: {offset_bytes} ({offset_bytes / 1024 ** 3} GiB).\nActual read size is [{raw.shape}], desired size was: [{readSize}].\nWill ignore this line and stop reading.\n'
                 warnings.warn(warnstring)
-                # Reject this data fragment. To do so, init with the values of blockInit                
+                # Reject this data fragment. To do so, init with the values of blockInit
                 raw[0:readShape.prod()] = blockInit[0]
                 raw = raw.reshape(readShape)
                 isBrokenRead = True  # remember it and bail out later
@@ -772,7 +781,7 @@ class twix_map_obj:
             # Do expensive computations and reorderings on the gathered block.
             # Unfortunately, a lot of code is necessary, but that is executed much less
             # frequent, so its worthwhile for speed.
-            # TODO: Do *everything* block-by-block            
+            # TODO: Do *everything* block-by-block
             if (blockCtr == blockSz) or (k == kMax - 1) or (isBrokenRead & blockCtr > 1):
                 # measure the time to process a block of data
                 tic = time.perf_counter()
@@ -800,25 +809,29 @@ class twix_map_obj:
                     phase_factor = np.exp(1j * 2 * np.pi * (adcphase - fovphase))
                     block *= phase_factor
 
-                    # regrid the data
-                    sz = block.shape
-                    ninterp = np.prod(sz[1:])
-                    rsTrj[1] = np.array(range(ninterp)) + 1
-                    trgTrj[1] = rsTrj[1]
-                    if ninterp == 1:
-                        blockdims = [0]
-                    else:
-                        blockdims = [0, 1]
+                    if block.shape != sz:
+                        # update grid
+                        sz = block.shape
+                        ninterp = np.prod(sz[1:])
+                        if ninterp == 1:
+                            blockdims = [0]
+                        else:
+                            blockdims = [0, 1]
+                        rsTrj[1] = np.array(range(ninterp)) + 1
+                        src_grid = tuple(rsTrj[dim] for dim in blockdims)
 
-                    src_grid = tuple(rsTrj[dim] for dim in blockdims)
+                    # regrid the data
+                    trgTrj[1] = rsTrj[1]
                     trg_grid = tuple(trgTrj[dim] for dim in blockdims)
                     z = np.reshape(block, (sz[0], -1), order='F')
                     # TODO: handle 1d regridding
-                    xi, yi = np.meshgrid(trg_grid[1], trg_grid[0])
-                    x, y = np.meshgrid(src_grid[1], src_grid[0])
+                    yi, xi = np.meshgrid(trg_grid[1], trg_grid[0], sparse=True)
+
                     # NOTE: there is some minor differences in regridding precision between python and matlab, don't
                     # expect the same result from regridding
-                    block = np.reshape(griddata((x.ravel(), y.ravel()), z.ravel(), (xi, yi), method='cubic'), sz,
+
+                    # Perform the interpolation with the given values
+                    block = np.reshape(complex_interp(src_grid, xi, yi, z), sz,
                                        order='F')
 
                 if self.removeOS:
@@ -843,8 +856,8 @@ class twix_map_obj:
                 cur2ndDim = selRange[1].size
                 cur3rdDim = block.shape[2]
                 block = block[selRange[0][:, np.newaxis],
-                              selRange[1][np.newaxis, :],
-                              :].reshape((cur1stDim, cur2ndDim, cur3rdDim))
+                        selRange[1][np.newaxis, :],
+                        :].reshape((cur1stDim, cur2ndDim, cur3rdDim))
 
                 toSort = cIxToTarg[ix]
                 I = np.argsort(toSort)
