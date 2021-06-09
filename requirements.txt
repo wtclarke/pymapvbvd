@@ -2,7 +2,7 @@ numpy
 attrdict
 tqdm
 
-dataclasses
+dataclasses ; python_version<'3.7'
 scipy
 matplotlib
 setuptools
