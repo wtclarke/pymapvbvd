@@ -925,3 +925,18 @@ class twix_map_obj:
         out = np.ascontiguousarray(out.reshape(outSize))
 
         return out if not self.squeeze else np.squeeze(out)
+  
+    """
+      ATH added August 2021
+         alter a loop counter, for example if its missing in the mdh, add it in here, or alter it
+         the length of the new loop must be = self.NAcq
+         fixLoopCounter('Ave',newLlistAve)
+    """
+    def fixLoopCounter(self,loop,newLoop):
+        if newLoop.shape[0] != self.NAcq:
+          print('length of new array must equal NAcq: '+str(self.NAcq))
+        self.__dict__[loop] = newLoop
+        N = max(newLoop)
+        self.__dict__['N'+loop] = N
+        self.fullSize[self.dataDims.index(loop)] = N
+        
