@@ -66,4 +66,6 @@ Some of the auxiliary parts of mapVBVD remain unimplemented. Please feel free to
 ## Credit where credit is due
 This code is a port of Philipp Ehses' original Matlab code. I am incredibly grateful to him for releasing this code to the MR community. There are a number of other names in the original code comments and log, these are: Felix Breuer, Wolf Blecher, Stephen Yutzy, Zhitao Li, Michael VÃlker, Jonas Bause and Chris Mirke.
 
+More recent thanks to Mo Shahdloo and Aaron Hess for edits.
+
 This port is released under the MIT licence and no credit is sought for its use.
