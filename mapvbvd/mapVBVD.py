@@ -323,7 +323,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
         currTwixObj.update({'hdr': currTwixObjHdr})
 
         # declare data objects:
-        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj, *kwargs)
+        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj, **kwargs)
         currTwixObj.update({'image': mytmo('image')})
         currTwixObj.update({'noise': mytmo('noise')})
         currTwixObj.update({'phasecor': mytmo('phasecor')})
