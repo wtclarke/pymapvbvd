@@ -1,5 +1,6 @@
 import os.path as op
 import numpy as np
+import pytest
 from mapvbvd import mapVBVD
 
 test_data_vb = op.join(op.dirname(__file__), 'test_data', 'meas_MID311_STEAM_wref1_FID115674.dat')
@@ -33,7 +34,8 @@ def test_ve():
 
 
 def test_vb_broken():
-    twixObj = mapVBVD(test_data_vb_broken, quiet=True)
+    with pytest.warns(UserWarning):
+        twixObj = mapVBVD(test_data_vb_broken, quiet=True)
     assert np.allclose(twixObj.image.fullSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 97, 1, 1, 1, 1, 1, 1])
     assert np.allclose(twixObj.image.sqzSize, [2048, 32, 97])
 
@@ -41,4 +43,3 @@ def test_vb_broken():
     assert ('sTXSPEC', 'asNucleusInfo', '0', 'tNucleus') in keys['MeasYaps']
     key_value = twixObj.search_header_for_val('MeasYaps', ('sTXSPEC', 'asNucleusInfo', '0', 'tNucleus'))
     assert key_value[0] == '"1H"'
-

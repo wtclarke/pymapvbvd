@@ -6,6 +6,7 @@ Created by shahdloo
 import os.path as op
 import numpy as np
 from mapvbvd import mapVBVD
+import pytest
 
 test_data_vb_broken = op.join(op.dirname(__file__), 'test_data', 'meas_MID111_sLaser_broken_FID4873.dat')
 test_data_gre = op.join(op.dirname(__file__), 'test_data', 'meas_MID00255_FID12798_GRE_surf.dat')
@@ -20,7 +21,8 @@ def test_flagRemoveOS():
     assert np.allclose(twixObj[1].image.dataSize, [128,  16, 128,   1,   5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
     # broken file
-    twixObj = mapVBVD(test_data_vb_broken, quiet=False)
+    with pytest.warns(UserWarning):
+        twixObj = mapVBVD(test_data_vb_broken, quiet=False)
     twixObj.image.flagRemoveOS = False
     assert np.allclose(twixObj.image.dataSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 97, 1, 1, 1, 1, 1, 1])
     twixObj.image.flagRemoveOS = True
