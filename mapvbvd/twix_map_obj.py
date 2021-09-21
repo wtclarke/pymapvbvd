@@ -271,7 +271,7 @@ class twix_map_obj:
         self.full_size = None
 
         # Flags
-        self.average_dim = np.full(16, False, dtype=np.bool)
+        self.average_dim = np.full(16, False, dtype=bool)
         self.average_dim[self.dataDims.index('Ave')] = self.doAverage
         self.average_dim[self.dataDims.index('Rep')] = self.averageReps
         self.average_dim[self.dataDims.index('Set')] = self.averageSets
@@ -460,7 +460,7 @@ class twix_map_obj:
              self.NSli, self.NAve, self.NPhs, self.NEco,
              self.NRep, self.NSet, self.NSeg, self.NIda,
              self.NIdb, self.NIdc, self.NIdd, self.NIde]
-            , dtype=np.int)
+            , dtype=int)
 
         nByte = self.NCha * (self.freadInfo.szChannelHeader + 8 * self.NCol)
 

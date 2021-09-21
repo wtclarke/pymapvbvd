@@ -151,7 +151,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
             t.update(progress)
             last_progress = curr_progress
 
-        cPos = cPos + ulDMALength
+        cPos = cPos + int(ulDMALength)
 
     if isEOF or n_acq == len(filePos):
         n_acq = n_acq - 1  # ignore the last attempt
