@@ -177,7 +177,7 @@ def evalMDH(mdh_blob, version):
 
     ulPackBit = get_bit(mdh_blob[3, :], 2)
     ulPCI_rx = set_bit(mdh_blob[3, :], 7, False)  # keep 6 relevant bits
-    ulPCI_rx = set_bit(ulPCI_rx, 8, False)
+    ulPCI_rx = set_bit(np.int16(ulPCI_rx), 8, False)
     mdh_blob[3, :] = get_bit(mdh_blob[3, :], 1)  # ubit24: keep only 1 bit from the 4th byte
 
     data_uint32 = np.ascontiguousarray(mdh_blob[0:76, :].transpose())
