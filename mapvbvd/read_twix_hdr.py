@@ -113,8 +113,10 @@ def parse_xprot(buffer):
         name = t.group(1)
 
         value = re.sub(r'("*)|( *<\w*> *[^\n]*)', '', t.groups()[-1])
-        value = re.sub(r'[\t\n\r\f\v]*', '',
-                       value.strip())  # value = re.sub(r'\s*',' ',value) for some bonkers reason this inserts whitespace between all the letters! Just look for other whitespace that \s usually does.
+        # value = re.sub(r'\s*',' ',value)
+        # for some bonkers reason this inserts whitespace between all the letters!
+        # Just look for other whitespace that \s usually does.
+        value = re.sub(r'[\t\n\r\f\v]*', '', value.strip())
         try:
             value = float(value)
         except ValueError:

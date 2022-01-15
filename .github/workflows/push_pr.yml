@@ -34,7 +34,7 @@ jobs:
         shell: bash -l {0}
         run: |
             conda install flake8
-            python -m flake8 spec2nii
+            python -m flake8 mapvbvd
       - name: Run pytest
         shell: bash -l {0}
         run: |

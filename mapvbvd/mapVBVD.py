@@ -86,7 +86,9 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
 
         except EOFError:
             import warnings
-            warningString = f'\nAn unexpected read error occurred at this byte offset: {cPos} ({cPos / 1024 ** 3} GiB)\n'
+            warningString =\
+                '\nAn unexpected read error occurred at this byte offset:'\
+                f' {cPos} ({cPos / 1024 ** 3} GiB)\n'
             warningString += 'Will stop reading now.\n'
             warnings.warn(warningString)
             isEOF = True
@@ -253,16 +255,16 @@ def mapVBVD(filename, quiet=False, **kwargs):
         print(f'pymapVBVD version {pkg.__version__}')
 
     # parse kw arguments
-    bReadImaScan = kwargs.get('bReadImaScan', True)
-    bReadNoiseScan = kwargs.get('bReadNoiseScan', True)
-    bReadPCScan = kwargs.get('bReadPCScan', True)
-    bReadRefScan = kwargs.get('bReadRefScan', True)
-    bReadRefPCScan = kwargs.get('bReadRefPCScan', True)
-    bReadRTfeedback = kwargs.get('bReadRTfeedback', True)
-    bReadPhaseStab = kwargs.get('bReadPhaseStab', True)
-    bReadHeader = kwargs.get('bReadHeader', True)
+    # bReadImaScan = kwargs.get('bReadImaScan', True)
+    # bReadNoiseScan = kwargs.get('bReadNoiseScan', True)
+    # bReadPCScan = kwargs.get('bReadPCScan', True)
+    # bReadRefScan = kwargs.get('bReadRefScan', True)
+    # bReadRefPCScan = kwargs.get('bReadRefPCScan', True)
+    # bReadRTfeedback = kwargs.get('bReadRTfeedback', True)
+    # bReadPhaseStab = kwargs.get('bReadPhaseStab', True)
+    # bReadHeader = kwargs.get('bReadHeader', True)
 
-    ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
+    # ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
 
     # TODO: handle filename input variations
     fid = open(filename, 'rb')
@@ -280,8 +282,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             print('Software version: VD')
 
         NScans = secondInt[0]
-        measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
-        fileID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
+        # measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
+        # fileID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
         measOffset = np.zeros(NScans, dtype=np.uint64)
         measLength = np.zeros(NScans, dtype=np.uint64)
         for k in range(NScans):
@@ -323,7 +325,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
         currTwixObj.update({'hdr': currTwixObjHdr})
 
         # declare data objects:
-        mytmo = lambda dtype: twix_map_obj(dtype, filename, version, rstraj, **kwargs)
+        def mytmo(dtype):
+            return twix_map_obj(dtype, filename, version, rstraj, **kwargs)
         currTwixObj.update({'image': mytmo('image')})
         currTwixObj.update({'noise': mytmo('noise')})
         currTwixObj.update({'phasecor': mytmo('phasecor')})
@@ -376,8 +379,13 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('noise', None)
 
         # MDH_PATREFSCAN refscan
-        isCurrScan = (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN) & ~(
-                mask.MDH_PHASCOR | mask.MDH_PHASESTABSCAN | mask.MDH_REFPHASESTABSCAN | mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK)
+        isCurrScan = \
+            (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)\
+            & ~(mask.MDH_PHASCOR
+                | mask.MDH_PHASESTABSCAN
+                | mask.MDH_REFPHASESTABSCAN
+                | mask.MDH_RTFEEDBACK
+                | mask.MDH_HPFEEDBACK)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.refscan.readMDH(mdh, filePos, isCurrScan)
@@ -400,7 +408,7 @@ def mapVBVD(filename, quiet=False, **kwargs):
         else:
             currTwixObj.pop('vop', None)
 
-        # MDH_PHASCOR 
+        # MDH_PHASCOR
         isCurrScan = mask.MDH_PHASCOR & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
@@ -417,8 +425,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('refscanPC', None)
 
         # phasestab MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN) & (
-                ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
+            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.phasestab.readMDH(mdh, filePos, isCurrScan)
@@ -426,8 +434,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('phasestab', None)
 
         # refscanPS MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN) & (
-                mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
+            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.refscan_phasestab.readMDH(mdh, filePos, isCurrScan)
@@ -435,8 +443,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('refscan_phasestab', None)
 
         # phasestabRef0 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN) & (
-                ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
+            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
@@ -444,8 +452,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('phasestab_ref0', None)
 
         # refscanPSRef0 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN) & (
-                mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
+            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.refscan_phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
@@ -453,8 +461,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('refscan_phasestab_ref0', None)
 
         # phasestabRef1 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN) & (
-                ~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
+            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
@@ -462,8 +470,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             currTwixObj.pop('phasestab_ref1', None)
 
         # refscanPSRef1 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN) & (
-                mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
+            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
         isCurrScan = isCurrScan.astype(bool)
         if isCurrScan.any():
             currTwixObj.refscan_phasestab_ref1.readMDH(mdh, filePos, isCurrScan)

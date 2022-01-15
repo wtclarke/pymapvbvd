@@ -13,7 +13,7 @@ def complex_interp(src_grid, xi, yi, z):
     interpolator_i = RectBivariateSpline(src_grid[0], src_grid[1], z.imag)
     zz_r = interpolator_r(xi, yi)
     zz_i = interpolator_i(xi, yi)
-    return zz_r + 1j*zz_i
+    return zz_r + 1j * zz_i
 
 
 class twix_map_obj:
@@ -283,12 +283,14 @@ class twix_map_obj:
             self.skipToFirstLine = True
 
     def __str__(self):
+        data_sz = np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")
+        data_sz_sqz = np.array2string(self.sqzSize, formatter={"int": lambda x: "%i" % x}, separator=",")
         des_str = ('***twix_map_obj***\n'
                    f'File: {self.fname}\n'
                    f'Software: {self.softwareVersion}\n'
                    f'Number of acquisitions read {self.NAcq}\n'
-                   f'Data size is {np.array2string(self.fullSize, formatter={"float": lambda x: "%.0f" % x}, separator=",")}\n'
-                   f'Squeezed data size is {np.array2string(self.sqzSize, formatter={"int": lambda x: "%i" % x}, separator=",")} ({self.sqzDims})\n'
+                   f'Data size is {data_sz}\n'
+                   f'Squeezed data size is {data_sz_sqz} ({self.sqzDims})\n'
                    f'NCol = {self.NCol:0.0f}\n'
                    f'NCha = {self.NCha:0.0f}\n'
                    f'NLin  = {self.NLin:0.0f}\n'
@@ -372,7 +374,7 @@ class twix_map_obj:
                 # self.clean()
                 self.unsorted(self.NAcq)
                 isLastAcqGood = True
-            except Exception as e:
+            except Exception:
                 logging.exception(f'An error occurred whilst trying to fix last MDH. NAcq = {self.NAcq:.0f}')
                 self.isBrokenFile = True
                 self.NAcq -= 1
@@ -385,16 +387,16 @@ class twix_map_obj:
         if self.NAcq == 0:
             return
 
-        fields = ['NCol', 'NCha',
-                  'Lin', 'Par', 'Sli', 'Ave', 'Phs', 'Eco', 'Rep',
-                  'Set', 'Seg', 'Ida', 'Idb', 'Idc', 'Idd', 'Ide',
-                  'centerCol', 'centerLin', 'centerPar', 'cutOff',
-                  'coilSelect', 'ROoffcenter', 'timeSinceRF', 'IsReflected',
-                  'scancounter', 'timestamp', 'pmutime', 'IsRawDataCorrect',
-                  'slicePos', 'iceParam', 'freeParam', 'memPos']
+        # fields = ['NCol', 'NCha',
+        #           'Lin', 'Par', 'Sli', 'Ave', 'Phs', 'Eco', 'Rep',
+        #           'Set', 'Seg', 'Ida', 'Idb', 'Idc', 'Idd', 'Ide',
+        #           'centerCol', 'centerLin', 'centerPar', 'cutOff',
+        #           'coilSelect', 'ROoffcenter', 'timeSinceRF', 'IsReflected',
+        #           'scancounter', 'timestamp', 'pmutime', 'IsRawDataCorrect',
+        #           'slicePos', 'iceParam', 'freeParam', 'memPos']
 
-        nack = self.NAcq
-        idx = np.arange(0, nack - 1)
+        # nack = self.NAcq
+        # idx = np.arange(0, nack - 1)
 
         # for f in fields:
         #     curr = getattr(self, f)
@@ -459,8 +461,8 @@ class twix_map_obj:
             [self.NCol, self.NCha, NLinAlloc, NParAlloc,
              self.NSli, self.NAve, self.NPhs, self.NEco,
              self.NRep, self.NSet, self.NSeg, self.NIda,
-             self.NIdb, self.NIdc, self.NIdd, self.NIde]
-            , dtype=int)
+             self.NIdb, self.NIdc, self.NIdd, self.NIde],
+            dtype=int)
 
         nByte = self.NCha * (self.freadInfo.szChannelHeader + 8 * self.NCol)
 
@@ -501,8 +503,8 @@ class twix_map_obj:
                     if k < (len(S) - 1):
                         selRange[cDim] = np.arange(0, self.dataSize[cDim]).astype(int)
                     else:  # all later dimensions selected and 'vectorized'!
-                        for l in range(cDim, self.dataSize.size):
-                            selRange[l] = np.arange(0, self.dataSize[l]).astype(int)
+                        for ll in range(cDim, self.dataSize.size):
+                            selRange[ll] = np.arange(0, self.dataSize[ll]).astype(int)
                         outSize[k] = np.prod(self.dataSize[cDim:])
                         break
                 elif isinstance(s, slice):
@@ -632,8 +634,8 @@ class twix_map_obj:
         # make sure that indices fit inside selection range
         for k in range(2, len(selRange)):
             tmp = cIx[k - 2, :]
-            for l in range(0, selRange[k].size):
-                cIx[k - 2, tmp == selRange[k][l]] = l
+            for ll in range(0, selRange[k].size):
+                cIx[k - 2, tmp == selRange[k][ll]] = ll
 
         sz = selRangeSz[2:]
         ixToTarg = np.zeros(cIx.shape[1], dtype=int)  # pylint: disable=E1136  # pylint/issues/3139
@@ -711,7 +713,7 @@ class twix_map_obj:
 
         bIsReflected = self.IsReflected[cIxToRaw]
         bRegrid = self.regrid and self.rstrj.size > 1
-        slicedata = self.slicePos[cIxToRaw, :]
+        # slicedata = self.slicePos[cIxToRaw, :]
         ro_shift = self.ROoffcenter[cIxToRaw] * int(not self.ignoreROoffcenter)
         # %SRY store information about raw data correction
         # bDoRawDataCorrect = this.arg.doRawDataCorrect;
@@ -766,7 +768,11 @@ class twix_map_obj:
                 offset_bytes = mem[k] + szScanHeader
                 # remainingSz = readSize(2) - size(raw,1);
                 import warnings
-                warnstring = f'An unexpected read error occurred at this byte offset: {offset_bytes} ({offset_bytes / 1024 ** 3} GiB).\nActual read size is [{raw.shape}], desired size was: [{readSize}].\nWill ignore this line and stop reading.\n'
+                warnstring =\
+                    'An unexpected read error occurred at this byte offset:'\
+                    f' {offset_bytes} ({offset_bytes / 1024 ** 3} GiB).'\
+                    f'\nActual read size is [{raw.shape}], desired size was: [{readSize}].\n'\
+                    'Will ignore this line and stop reading.\n'
                 warnings.warn(warnstring)
                 # Reject this data fragment. To do so, init with the values of blockInit
                 raw[0:readShape.prod()] = blockInit[0]
@@ -855,17 +861,16 @@ class twix_map_obj:
                 cur1stDim = selRange[0].size
                 cur2ndDim = selRange[1].size
                 cur3rdDim = block.shape[2]
-                block = block[selRange[0][:, np.newaxis],
-                        selRange[1][np.newaxis, :],
-                        :].reshape((cur1stDim, cur2ndDim, cur3rdDim))
+                block = block[selRange[0][:, np.newaxis], selRange[1][np.newaxis, :], :]\
+                    .reshape((cur1stDim, cur2ndDim, cur3rdDim))
 
                 toSort = cIxToTarg[ix]
-                I = np.argsort(toSort)
-                sortIdx = toSort[I]
-                block = block[:, :, I]  # reorder according to sorted target indices
+                II = np.argsort(toSort)
+                sortIdx = toSort[II]
+                block = block[:, :, II]  # reorder according to sorted target indices
 
                 # Mark duplicate indices with 1; we'll have to treat them special for proper averaging
-                # Bonus: The very first storage can be made much faster, because it's in-place.                                
+                # Bonus: The very first storage can be made much faster, because it's in-place.
                 isDupe = np.concatenate((np.array([False]), np.diff(sortIdx) == 0))
 
                 idx1 = sortIdx[~isDupe]  # acquired once in this block
@@ -906,7 +911,7 @@ class twix_map_obj:
                     tprev = t
 
                 blockCtr = 0
-                block = blockInit  # reset to garbage            
+                block = blockInit  # reset to garbage
 
             if isBrokenRead:
                 self.isBrokenFile = True
@@ -925,18 +930,17 @@ class twix_map_obj:
         out = np.ascontiguousarray(out.reshape(outSize))
 
         return out if not self.squeeze else np.squeeze(out)
-  
+
     """
       ATH added August 2021
          alter a loop counter, for example if its missing in the mdh, add it in here, or alter it
          the length of the new loop must be = self.NAcq
          fixLoopCounter('Ave',newLlistAve)
     """
-    def fixLoopCounter(self,loop,newLoop):
+    def fixLoopCounter(self, loop, newLoop):
         if newLoop.shape[0] != self.NAcq:
-          print('length of new array must equal NAcq: '+str(self.NAcq))
+            print('length of new array must equal NAcq: ' + str(self.NAcq))
         self.__dict__[loop] = newLoop
         N = max(newLoop)
-        self.__dict__['N'+loop] = N
+        self.__dict__['N' + loop] = N
         self.fullSize[self.dataDims.index(loop)] = N
-        
