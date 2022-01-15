@@ -2,7 +2,8 @@ import re
 import numpy as np
 from scipy.integrate import cumtrapz
 from itertools import chain
-from attrdict import AttrDict
+
+from mapvbvd._attrdict import AttrDict
 
 
 class twix_hdr(AttrDict):

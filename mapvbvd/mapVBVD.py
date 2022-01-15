@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 import numpy as np
-from attrdict import AttrDict
 from tqdm.auto import tqdm
 
 import mapvbvd as pkg
+from mapvbvd._attrdict import AttrDict
 from .read_twix_hdr import read_twix_hdr, twix_hdr
 from .twix_map_obj import twix_map_obj
 
