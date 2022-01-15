@@ -1,0 +1,9 @@
+dependencies:
+ - numpy
+ - tqdm
+ - dataclasses
+ - scipy
+ - matplotlib
+ - setuptools
+ - pytest
+ - h5py
