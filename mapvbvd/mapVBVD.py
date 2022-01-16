@@ -282,8 +282,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             print('Software version: VD')
 
         NScans = secondInt[0]
-        # measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
-        # fileID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)
+        measID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)  # noqa: F841
+        fileID = np.fromfile(fid, dtype=np.uint32, count=1, offset=0)  # noqa: F841
         measOffset = np.zeros(NScans, dtype=np.uint64)
         measLength = np.zeros(NScans, dtype=np.uint64)
         for k in range(NScans):
