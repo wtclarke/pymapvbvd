@@ -1,9 +1,0 @@
-numpy
-tqdm
-
-dataclasses ; python_version<'3.7'
-scipy
-matplotlib
-setuptools
-pytest
-h5py
