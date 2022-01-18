@@ -8,3 +8,4 @@ dependencies:
  - pyyaml
  - pytest
  - h5py
+ - six
