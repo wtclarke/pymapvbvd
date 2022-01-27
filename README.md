@@ -2,8 +2,15 @@
 
 ![PyPI](https://img.shields.io/pypi/v/pyMapVBVD)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyMapVBVD)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5909806.svg)](https://doi.org/10.5281/zenodo.5909806)
+
 
 Python port of the Matlab mapVBVD tool for reading Siemens raw data 'twix' (.dat) files.
+
+## Installation
+`conda install -c conda-forge pymapvbvd`  
+or  
+`pip install pymapvbvd`
 
 ## Use
 
