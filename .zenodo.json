@@ -1,0 +1,17 @@
+{
+    "description": "<p>pyMapVBVD is a python port of the Matlab mapVBVD tool for reading Siemens raw data 'twix' (.dat) files.</p>\n\n<p>pyMapVBVD is developed at the Wellcome Centre for Integrative Neuroimaging (FMRIB), at the University of Oxford. It is hosted at&nbsp;<a href=\"https://github.com/wtclarke/pymapvbvd\">github.com/wtclarke/pymapvbvd</a>.</p>", 
+    "license": "MIT License", 
+    "title": "pyMapVBVD", 
+    "keywords": [ "MRS" ],
+    "creators": [
+        {
+            "orcid": "0000-0001-7159-7025", 
+            "affiliation": "University of Oxford", 
+            "name": "William T Clarke"
+        }
+    ], 
+    "access_right": "open",
+    "grants": [
+        { "id": "10.13039/100004440::203139"}
+    ]
+}
