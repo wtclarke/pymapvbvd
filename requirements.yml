@@ -1,7 +1,6 @@
 dependencies:
  - numpy
  - tqdm
- - dataclasses
  - scipy
  - matplotlib
  - setuptools
