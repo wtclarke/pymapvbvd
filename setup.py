@@ -26,7 +26,7 @@ setuptools.setup(
     description='Python twix file reader',
     author='Will Clarke',
     author_email='william.clarke@ndcn.ox.ac.uk',
-    url='https://github.com/wexeee/pymapvbvd',
+    url='https://github.com/wtclarke/pymapvbvd',
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
