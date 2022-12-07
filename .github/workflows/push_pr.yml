@@ -10,9 +10,9 @@ jobs:
     name: Miniconda (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
-        matrix:
-            os: ["ubuntu-latest"]
-            python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v2
         with:
