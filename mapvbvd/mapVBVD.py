@@ -142,7 +142,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
                                   dtype=np.uint8)  # pylint: disable=E1136  # pylint/issues/3139
             mdh_blob = np.concatenate((mdh_blob, grownArray), axis=1)
 
-            filePos = np.concatenate((filePos, np.zeros((allocSize))), axis=0)
+            filePos = np.concatenate((filePos, np.zeros(allocSize)), axis=0)
 
             szBlob = mdh_blob.shape[1]  # pylint: disable=E1136  # pylint/issues/3139
 
