@@ -1,5 +1,9 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.2 (Tuesday 10th January 2023)
+---------------------------------
+- Updated build dependencies (for pyproject.toml build)
+
 0.5.1 (Tuesday 10th January 2023)
 ---------------------------------
 - Move to pyproject.toml build
