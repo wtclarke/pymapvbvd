@@ -1,7 +1,7 @@
 import copy
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
@@ -199,8 +199,8 @@ class twix_map_obj:
             szScanHeader: int  # bytes
             szChannelHeader: int  # bytes
             iceParamSz: int
-            sz: np.array = np.zeros(2)
-            shape: np.array = np.zeros(2)
+            sz: np.array = field(default_factory=lambda: np.zeros(2))
+            shape: np.array = field(default_factory=lambda: np.zeros(2))
             cut: np.array = None
 
         if self.softwareVersion == 'vb':
