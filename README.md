@@ -8,15 +8,15 @@
 Python port of the Matlab mapVBVD tool for reading Siemens raw data 'twix' (.dat) files.
 
 ## Installation
-`conda install -c conda-forge pymapvbvd`  
-or  
+`conda install -c conda-forge pymapvbvd`
+or
 `pip install pymapvbvd`
 
 ## Use
 
 I have attempted to replicate the syntax of the original matlab code, but there are a few differences due to differing variable types.
 
-This package contains a demo Jupyter notebook 'Demo.ipynb' which can be run on the demo data found in tests/test_data. There is unsuppressed water SVS MRS, from both a 7T VB scanner and a VE Prisma. There is also imaging data (3D GRE and EPI) from the [ISMRMRD test dataset](https://doi.org/10.5281/zenodo.33166). 
+This package contains a demo Jupyter notebook 'Demo.ipynb' which can be run on the demo data found in tests/test_data. There is unsuppressed water SVS MRS, from both a 7T VB scanner and a VE Prisma. There is also imaging data (3D GRE and EPI) from the [ISMRMRD test dataset](https://doi.org/10.5281/zenodo.33166).
 
 Run using the following:
 ```
@@ -43,7 +43,7 @@ To retrieve the data in an unsorted format (i.e. Col,Cha,NAcq) use `twixObj.imag
 
 Header information is contained in a dict `twixObj.hdr`
 `twixObj.hdr.keys()` provides a list of the data containers.
-Access them manually using e.g. `twixObj.hdr['MeasYaps']` or `twixObj.hdr.MeasYaps`.  
+Access them manually using e.g. `twixObj.hdr['MeasYaps']` or `twixObj.hdr.MeasYaps`.
 These objects are in turn a final level of dictionaries. The actual data values can be accessed either manually using tuples of key values e.g.
 ```
 twixObj.hdr.MeasYaps[('sTXSPEC','asNucleusInfo','0','tNucleus')]

@@ -14,6 +14,7 @@ with open("requirements.yml", "r") as stream:
     except yaml.YAMLError as exc:
         print(exc)
 
+
 setuptools.setup(
     name='pyMapVBVD',
     version=versioneer.get_version(),
