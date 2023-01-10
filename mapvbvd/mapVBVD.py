@@ -243,28 +243,27 @@ def evalMDH(mdh_blob, version):
         data_single[:, 1 - 1],  # fReadOutOffcentre 69 :  72
         data_uint32[:, 19 - 1],  # ulTimeSinceLastRF 73 :  76
         data_uint16[:, 25 - 1],  # ushKSpaceCentreLineNo 77 :  78
-        data_uint16[:, 26 - 1],  # ushKSpaceCentrePartitionNo 79 :  80
-        )
+        data_uint16[:, 26 - 1])  # ushKSpaceCentrePartitionNo 79 :  80
 
     evalInfoMask1 = mdh.aulEvalInfoMask[:, 0]
 
     @dataclass
     class MASK:
-        MDH_ACQEND
-        MDH_RTFEEDBACK
-        MDH_HPFEEDBACK
-        MDH_SYNCDATA
-        MDH_RAWDATACORRECTION
-        MDH_REFPHASESTABSCAN
-        MDH_PHASESTABSCAN
-        MDH_SIGNREV
-        MDH_PHASCOR
-        MDH_PATREFSCAN
-        MDH_PATREFANDIMASCAN
-        MDH_REFLECT
-        MDH_NOISEADJSCAN
-        MDH_VOP
-        MDH_IMASCAN
+        MDH_ACQEND: np.ndarray[int, np.uint32]
+        MDH_RTFEEDBACK: np.ndarray[int, np.uint32]
+        MDH_HPFEEDBACK: np.ndarray[int, np.uint32]
+        MDH_SYNCDATA: np.ndarray[int, np.uint32]
+        MDH_RAWDATACORRECTION: np.ndarray[int, np.uint32]
+        MDH_REFPHASESTABSCAN: np.ndarray[int, np.uint32]
+        MDH_PHASESTABSCAN: np.ndarray[int, np.uint32]
+        MDH_SIGNREV: np.ndarray[int, np.uint32]
+        MDH_PHASCOR: np.ndarray[int, np.uint32]
+        MDH_PATREFSCAN: np.ndarray[int, np.uint32]
+        MDH_PATREFANDIMASCAN: np.ndarray[int, np.uint32]
+        MDH_REFLECT: np.ndarray[int, np.uint32]
+        MDH_NOISEADJSCAN: np.ndarray[int, np.uint32]
+        MDH_VOP: np.ndarray[int, np.uint32]
+        MDH_IMASCAN: np.ndarray[int, np.uint32]
 
     mask = MASK(
         np.minimum(evalInfoMask1 & 2 ** 0, 1),
