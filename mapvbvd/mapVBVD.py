@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from sys import stdout
+from sys import stdout, version_info
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -198,49 +198,96 @@ def evalMDH(mdh_blob, version):
         SlicePos: np.single
         aushIceProgramPara: np.uint16
         aushFreePara: np.uint16
-        lMeasUID: np.uint32 = data_uint32[:, 2 - 1]  # 5 :   8
-        ulScanCounter: np.uint32 = data_uint32[:, 3 - 1]  # 9 :  12
-        ulTimeStamp: np.uint32 = data_uint32[:, 4 - 1]  # 13 :  16
-        ulPMUTimeStamp: np.uint32 = data_uint32[:, 5 - 1]  # 17 :  20
-        aulEvalInfoMask: np.uint32 = data_uint32[:, 5:7]  # 21 :  28
-        ushSamplesInScan: np.uint16 = data_uint16[:, 1 - 1]  # 29 :  30
-        ushUsedChannels: np.uint16 = data_uint16[:, 2 - 1]  # 31 :  32
-        sLC: np.uint16 = data_uint16[:, 2:16]  # 33 :  60
-        sCutOff: np.uint16 = data_uint16[:, 16:18]  # 61 :  64
-        ushKSpaceCentreColumn: np.uint16 = data_uint16[:, 19 - 1]  # 66 :  66
-        ushCoilSelect: np.uint16 = data_uint16[:, 20 - 1]  # 67 :  68
-        fReadOutOffcentre: np.single = data_single[:, 1 - 1]  # 69 :  72
-        ulTimeSinceLastRF: np.uint32 = data_uint32[:, 19 - 1]  # 73 :  76
-        ushKSpaceCentreLineNo: np.uint16 = data_uint16[:, 25 - 1]  # 77 :  78
-        ushKSpaceCentrePartitionNo: np.uint16 = data_uint16[:, 26 - 1]  # 79 :  80
+        lMeasUID: np.uint32
+        ulScanCounter: np.uint32
+        ulTimeStamp: np.uint32
+        ulPMUTimeStamp: np.uint32
+        aulEvalInfoMask: np.uint32
+        ushSamplesInScan: np.uint16
+        ushUsedChannels: np.uint16
+        sLC: np.uint16
+        sCutOff: np.uint16
+        ushKSpaceCentreColumn: np.uint16
+        ushCoilSelect: np.uint16
+        fReadOutOffcentre: np.single
+        ulTimeSinceLastRF: np.uint32
+        ushKSpaceCentreLineNo: np.uint16
+        ushKSpaceCentrePartitionNo: np.uint16
 
     if isVD:
-        mdh = MDH(ulPackBit, ulPCI_rx, data_single[:, 3:10], data_uint16[:, 40:64], data_uint16[:, 64:68])
+        index_SlicePos = (slice(None), slice(3, 10))
+        index_aushIceProgramPara = (slice(None), slice(40, 64))
+        index_aushFreePara = (slice(None), slice(64, 68))
     else:
-        mdh = MDH(ulPackBit, ulPCI_rx, data_single[:, 7:14], data_uint16[:, 26:30], data_uint16[:, 30:34])
+        index_SlicePos = (slice(None), slice(7, 14))
+        index_aushIceProgramPara = (slice(None), slice(26, 30))
+        index_aushFreePara = (slice(None), slice(30, 34))
+
+    mdh = MDH(
+        ulPackBit,
+        ulPCI_rx,
+        data_single[index_SlicePos],  # SlicePos
+        data_uint16[index_aushIceProgramPara],  # aushIceProgramPara
+        data_uint16[index_aushFreePara],  # aushFreePara
+        data_uint32[:, 2 - 1],  # lMeasUID 5 :   8
+        data_uint32[:, 3 - 1],  # ulScanCounter 9 :  12
+        data_uint32[:, 4 - 1],  # ulTimeStamp 13 :  16
+        data_uint32[:, 5 - 1],  # ulPMUTimeStamp 17 :  20
+        data_uint32[:, 5:7],  # aulEvalInfoMask 21 :  28
+        data_uint16[:, 1 - 1],  # ushSamplesInScan 29 :  30
+        data_uint16[:, 2 - 1],  # ushUsedChannels 31 :  32
+        data_uint16[:, 2:16],  # sLC 33 :  60
+        data_uint16[:, 16:18],  # sCutOff 61 :  64
+        data_uint16[:, 19 - 1],  # ushKSpaceCentreColumn 66 :  66
+        data_uint16[:, 20 - 1],  # ushCoilSelect 67 :  68
+        data_single[:, 1 - 1],  # fReadOutOffcentre 69 :  72
+        data_uint32[:, 19 - 1],  # ulTimeSinceLastRF 73 :  76
+        data_uint16[:, 25 - 1],  # ushKSpaceCentreLineNo 77 :  78
+        data_uint16[:, 26 - 1])  # ushKSpaceCentrePartitionNo 79 :  80
 
     evalInfoMask1 = mdh.aulEvalInfoMask[:, 0]
 
+    if version_info[1] > 8:
+        mdh_type = np.ndarray[int, np.uint32]
+    else:
+        mdh_type = np.ndarray
+
     @dataclass
     class MASK:
-        MDH_ACQEND = np.minimum(evalInfoMask1 & 2 ** 0, 1)
-        MDH_RTFEEDBACK = np.minimum(evalInfoMask1 & 2 ** 1, 1)
-        MDH_HPFEEDBACK = np.minimum(evalInfoMask1 & 2 ** 2, 1)
-        MDH_SYNCDATA = np.minimum(evalInfoMask1 & 2 ** 5, 1)
-        MDH_RAWDATACORRECTION = np.minimum(evalInfoMask1 & 2 ** 10, 1)
-        MDH_REFPHASESTABSCAN = np.minimum(evalInfoMask1 & 2 ** 14, 1)
-        MDH_PHASESTABSCAN = np.minimum(evalInfoMask1 & 2 ** 15, 1)
-        MDH_SIGNREV = np.minimum(evalInfoMask1 & 2 ** 17, 1)
-        MDH_PHASCOR = np.minimum(evalInfoMask1 & 2 ** 21, 1)
-        MDH_PATREFSCAN = np.minimum(evalInfoMask1 & 2 ** 22, 1)
-        MDH_PATREFANDIMASCAN = np.minimum(evalInfoMask1 & 2 ** 23, 1)
-        MDH_REFLECT = np.minimum(evalInfoMask1 & 2 ** 24, 1)
-        MDH_NOISEADJSCAN = np.minimum(evalInfoMask1 & 2 ** 25, 1)
-        MDH_VOP = np.minimum(mdh.aulEvalInfoMask[:, 1] & 2 ** (53 - 32),
-                             1)  # WTC modified this as the original matlab code didn't make sense
-        MDH_IMASCAN = np.ones(Nmeas, dtype=np.uint32)
+        MDH_ACQEND: mdh_type
+        MDH_RTFEEDBACK: mdh_type
+        MDH_HPFEEDBACK: mdh_type
+        MDH_SYNCDATA: mdh_type
+        MDH_RAWDATACORRECTION: mdh_type
+        MDH_REFPHASESTABSCAN: mdh_type
+        MDH_PHASESTABSCAN: mdh_type
+        MDH_SIGNREV: mdh_type
+        MDH_PHASCOR: mdh_type
+        MDH_PATREFSCAN: mdh_type
+        MDH_PATREFANDIMASCAN: mdh_type
+        MDH_REFLECT: mdh_type
+        MDH_NOISEADJSCAN: mdh_type
+        MDH_VOP: mdh_type
+        MDH_IMASCAN: mdh_type
 
-    mask = MASK()
+    mask = MASK(
+        np.minimum(evalInfoMask1 & 2 ** 0, 1),
+        np.minimum(evalInfoMask1 & 2 ** 1, 1),
+        np.minimum(evalInfoMask1 & 2 ** 2, 1),
+        np.minimum(evalInfoMask1 & 2 ** 5, 1),
+        np.minimum(evalInfoMask1 & 2 ** 10, 1),
+        np.minimum(evalInfoMask1 & 2 ** 14, 1),
+        np.minimum(evalInfoMask1 & 2 ** 15, 1),
+        np.minimum(evalInfoMask1 & 2 ** 17, 1),
+        np.minimum(evalInfoMask1 & 2 ** 21, 1),
+        np.minimum(evalInfoMask1 & 2 ** 22, 1),
+        np.minimum(evalInfoMask1 & 2 ** 23, 1),
+        np.minimum(evalInfoMask1 & 2 ** 24, 1),
+        np.minimum(evalInfoMask1 & 2 ** 25, 1),
+        np.minimum(
+            mdh.aulEvalInfoMask[:, 1] & 2 ** (53 - 32),
+            1),  # WTC modified this as the original matlab code didn't make sense
+        np.ones(Nmeas, dtype=np.uint32))
 
     noImaScan = (mask.MDH_ACQEND | mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK
                  | mask.MDH_PHASCOR | mask.MDH_NOISEADJSCAN | mask.MDH_PHASESTABSCAN
