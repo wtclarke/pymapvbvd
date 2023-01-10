@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from sys import stdout
+from sys import stdout, version_info
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -247,23 +247,28 @@ def evalMDH(mdh_blob, version):
 
     evalInfoMask1 = mdh.aulEvalInfoMask[:, 0]
 
+    if sys.version_info[1] > 7:
+        mdh_type = np.ndarray[int, np.uint32]
+    else:
+        mdh_type = np.ndarray
+
     @dataclass
     class MASK:
-        MDH_ACQEND: np.ndarray[int, np.uint32]
-        MDH_RTFEEDBACK: np.ndarray[int, np.uint32]
-        MDH_HPFEEDBACK: np.ndarray[int, np.uint32]
-        MDH_SYNCDATA: np.ndarray[int, np.uint32]
-        MDH_RAWDATACORRECTION: np.ndarray[int, np.uint32]
-        MDH_REFPHASESTABSCAN: np.ndarray[int, np.uint32]
-        MDH_PHASESTABSCAN: np.ndarray[int, np.uint32]
-        MDH_SIGNREV: np.ndarray[int, np.uint32]
-        MDH_PHASCOR: np.ndarray[int, np.uint32]
-        MDH_PATREFSCAN: np.ndarray[int, np.uint32]
-        MDH_PATREFANDIMASCAN: np.ndarray[int, np.uint32]
-        MDH_REFLECT: np.ndarray[int, np.uint32]
-        MDH_NOISEADJSCAN: np.ndarray[int, np.uint32]
-        MDH_VOP: np.ndarray[int, np.uint32]
-        MDH_IMASCAN: np.ndarray[int, np.uint32]
+        MDH_ACQEND: mdh_type
+        MDH_RTFEEDBACK: mdh_type
+        MDH_HPFEEDBACK: mdh_type
+        MDH_SYNCDATA: mdh_type
+        MDH_RAWDATACORRECTION: mdh_type
+        MDH_REFPHASESTABSCAN: mdh_type
+        MDH_PHASESTABSCAN: mdh_type
+        MDH_SIGNREV: mdh_type
+        MDH_PHASCOR: mdh_type
+        MDH_PATREFSCAN: mdh_type
+        MDH_PATREFANDIMASCAN: mdh_type
+        MDH_REFLECT: mdh_type
+        MDH_NOISEADJSCAN: mdh_type
+        MDH_VOP: mdh_type
+        MDH_IMASCAN: mdh_type
 
     mask = MASK(
         np.minimum(evalInfoMask1 & 2 ** 0, 1),
