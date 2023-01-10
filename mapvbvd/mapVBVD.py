@@ -247,7 +247,7 @@ def evalMDH(mdh_blob, version):
 
     evalInfoMask1 = mdh.aulEvalInfoMask[:, 0]
 
-    if sys.version_info[1] > 7:
+    if version_info[1] > 7:
         mdh_type = np.ndarray[int, np.uint32]
     else:
         mdh_type = np.ndarray
