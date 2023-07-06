@@ -73,6 +73,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         t = tqdm(total=measLength, unit='B', unit_scale=True, unit_divisor=1024,
                  desc='Scan %d/%d, read all mdhs' % (scan + 1, Nscans), leave=False,
                  file=stdout)
+
     while True:
         #         Read mdh as binary (uint8) and evaluate as little as possible to know...
         #           ... where the next mdh is (ulDMALength / ushSamplesInScan & ushUsedChannels)
@@ -80,11 +81,13 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         #           ... whether it is the last one (MDH_ACQEND)
         #         evalMDH() contains the correct and readable code for all mdh entries.
         try:
-            # read everything and cut out the mdh
-            data_u8 = np.fromfile(fid, dtype=np.uint8, count=int(ulDMALength))
-            if data_u8.size < int(ulDMALength):
+            # read only the MDH part
+            # Note, mhdStart is NEGATIVE offset relative to end of this block
+            fid.seek(int(ulDMALength) + mdhStart, 1)
+            # fid.read might be faster...
+            data_u8 = np.fromfile(fid, dtype=np.uint8, count=-mdhStart)
+            if data_u8.size < -mdhStart:
                 raise EOFError
-            data_u8 = data_u8[mdhStart:]
 
         except EOFError:
             import warnings
@@ -311,7 +314,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
     # bReadRefPCScan = kwargs.get('bReadRefPCScan', True)
     # bReadRTfeedback = kwargs.get('bReadRTfeedback', True)
     # bReadPhaseStab = kwargs.get('bReadPhaseStab', True)
-    # bReadHeader = kwargs.get('bReadHeader', True)
+    bReadHeader = kwargs.get('bReadHeader', True)
+    bReadMDH = kwargs.get('bReadMDH', True)
 
     # ignoreROoffcenter = kwargs.get('ignoreROoffcenter', False)
 
@@ -368,174 +372,178 @@ def mapVBVD(filename, quiet=False, **kwargs):
 
         currTwixObj = AttrDict()
         currTwixObjHdr = twix_hdr()
-        # rstraj = 0
-        # read header
-        currTwixObjHdr, rstraj = read_twix_hdr(fid, currTwixObjHdr)
-        currTwixObj.update({'hdr': currTwixObjHdr})
 
-        # declare data objects:
-        def mytmo(dtype):
-            return twix_map_obj(dtype, filename, version, rstraj, **kwargs)
-        currTwixObj.update({'image': mytmo('image')})
-        currTwixObj.update({'noise': mytmo('noise')})
-        currTwixObj.update({'phasecor': mytmo('phasecor')})
-        currTwixObj.update({'phasestab': mytmo('phasestab')})
-        currTwixObj.update({'phasestab_ref0': mytmo('phasestab_ref0')})
-        currTwixObj.update({'phasestab_ref1': mytmo('phasestab_ref1')})
-        currTwixObj.update({'refscan': mytmo('refscan')})
-        currTwixObj.update({'refscanPC': mytmo('refscanPC')})
-        currTwixObj.update({'refscan_phasestab': mytmo('refscan_phasestab')})
-        currTwixObj.update({'refscan_phasestab_ref0': mytmo('refscan_phasestab_ref0')})
-        currTwixObj.update({'refscan_phasestab_ref1': mytmo('refscan_phasestab_ref1')})
-        currTwixObj.update({'rtfeedback': mytmo('rtfeedback')})
-        currTwixObj.update({'vop': mytmo('vop')})
-
-        # TODO: print reader version information
-        # if s == 0:
-        #     # print(f'Reader version: {currTwixObj['image'].readerVersion})
-        #     print('UTC: TODO')
-
-        # jump to first mdh
-        cPos += hdr_len
-        # print(cPos[0])
-        fid.seek(cPos[0], 0)
-
-        # print(f'Scan {s + 1}/{NScans}, read all mdhs:')
-
-        mdh_blob, filePos, isEOF = loop_mdh_read(fid, version, NScans, s, measOffset[s],
-                                                 measLength[s], print_prog=not quiet)  # uint8; size: [ byteMDH  Nmeas ]
-
-        cPos = filePos[-1]
-        # filePos = filePos[:-1]
-
-        # get mdhs and masks for each scan, no matter if noise, image, RTfeedback etc:
-        [mdh, mask] = evalMDH(mdh_blob, version)
-
-        # Assign mdhs to their respective scans and parse it in the correct twix objects.
-
-        # MDH_IMASCAN
-        isCurrScan = mask.MDH_IMASCAN.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.image.readMDH(mdh, filePos, isCurrScan)
+        if bReadHeader:
+            currTwixObjHdr, rstraj = read_twix_hdr(fid, currTwixObjHdr)
+            currTwixObj.update({'hdr': currTwixObjHdr})
         else:
-            currTwixObj.pop('image', None)
+            rstraj = 0
 
-        # MDH_NOISEADJSCAN
-        isCurrScan = mask.MDH_NOISEADJSCAN.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.noise.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('noise', None)
+        if bReadMDH:
 
-        # MDH_PATREFSCAN refscan
-        isCurrScan = \
-            (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)\
-            & ~(mask.MDH_PHASCOR
-                | mask.MDH_PHASESTABSCAN
-                | mask.MDH_REFPHASESTABSCAN
-                | mask.MDH_RTFEEDBACK
-                | mask.MDH_HPFEEDBACK)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.refscan.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('refscan', None)
+            # declare data objects:
+            def mytmo(dtype):
+                return twix_map_obj(dtype, filename, version, rstraj, **kwargs)
+            currTwixObj.update({'image': mytmo('image')})
+            currTwixObj.update({'noise': mytmo('noise')})
+            currTwixObj.update({'phasecor': mytmo('phasecor')})
+            currTwixObj.update({'phasestab': mytmo('phasestab')})
+            currTwixObj.update({'phasestab_ref0': mytmo('phasestab_ref0')})
+            currTwixObj.update({'phasestab_ref1': mytmo('phasestab_ref1')})
+            currTwixObj.update({'refscan': mytmo('refscan')})
+            currTwixObj.update({'refscanPC': mytmo('refscanPC')})
+            currTwixObj.update({'refscan_phasestab': mytmo('refscan_phasestab')})
+            currTwixObj.update({'refscan_phasestab_ref0': mytmo('refscan_phasestab_ref0')})
+            currTwixObj.update({'refscan_phasestab_ref1': mytmo('refscan_phasestab_ref1')})
+            currTwixObj.update({'rtfeedback': mytmo('rtfeedback')})
+            currTwixObj.update({'vop': mytmo('vop')})
 
-        # MDH_RTFEEDBACK
-        isCurrScan = (mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK) & ~mask.MDH_VOP
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.rtfeedback.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('rtfeedback', None)
+            # TODO: print reader version information
+            # if s == 0:
+            #     # print(f'Reader version: {currTwixObj['image'].readerVersion})
+            #     print('UTC: TODO')
 
-        # VOP
-        isCurrScan = (mask.MDH_RTFEEDBACK & mask.MDH_VOP)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.vop.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('vop', None)
+            # jump to first mdh
+            cPos += hdr_len
+            # print(cPos[0])
+            fid.seek(cPos[0], 0)
 
-        # MDH_PHASCOR
-        isCurrScan = mask.MDH_PHASCOR & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.phasecor.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('phasecor', None)
+            # print(f'Scan {s + 1}/{NScans}, read all mdhs:')
 
-        # refscanPC
-        isCurrScan = mask.MDH_PHASCOR & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.refscanPC.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('refscanPC', None)
+            mdh_blob, filePos, isEOF = loop_mdh_read(fid, version, NScans, s, measOffset[s],
+                                                     measLength[s], print_prog=not quiet)  # uint8; size: [ byteMDH  Nmeas ]
 
-        # phasestab MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
-            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.phasestab.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('phasestab', None)
+            cPos = filePos[-1]
+            # filePos = filePos[:-1]
 
-        # refscanPS MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
-            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.refscan_phasestab.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('refscan_phasestab', None)
+            # get mdhs and masks for each scan, no matter if noise, image, RTfeedback etc:
+            [mdh, mask] = evalMDH(mdh_blob, version)
 
-        # phasestabRef0 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
-            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('phasestab_ref0', None)
+            # Assign mdhs to their respective scans and parse it in the correct twix objects.
 
-        # refscanPSRef0 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
-            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.refscan_phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('refscan_phasestab_ref0', None)
+            # MDH_IMASCAN
+            isCurrScan = mask.MDH_IMASCAN.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.image.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('image', None)
 
-        # phasestabRef1 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
-            & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('phasestab_ref1', None)
+            # MDH_NOISEADJSCAN
+            isCurrScan = mask.MDH_NOISEADJSCAN.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.noise.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('noise', None)
 
-        # refscanPSRef1 MDH_PHASESTABSCAN
-        isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
-            & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
-        isCurrScan = isCurrScan.astype(bool)
-        if isCurrScan.any():
-            currTwixObj.refscan_phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
-        else:
-            currTwixObj.pop('refscan_phasestab_ref1', None)
+            # MDH_PATREFSCAN refscan
+            isCurrScan = \
+                (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)\
+                & ~(mask.MDH_PHASCOR
+                    | mask.MDH_PHASESTABSCAN
+                    | mask.MDH_REFPHASESTABSCAN
+                    | mask.MDH_RTFEEDBACK
+                    | mask.MDH_HPFEEDBACK)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.refscan.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('refscan', None)
 
-        if isEOF:
-            # recover from read error
-            for keys in currTwixObj:
-                if keys != 'hdr':
-                    currTwixObj[keys].tryAndFixLastMdh()
-        else:
-            for keys in currTwixObj:
-                if keys != 'hdr':
-                    currTwixObj[keys].clean()
+            # MDH_RTFEEDBACK
+            isCurrScan = (mask.MDH_RTFEEDBACK | mask.MDH_HPFEEDBACK) & ~mask.MDH_VOP
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.rtfeedback.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('rtfeedback', None)
+
+            # VOP
+            isCurrScan = (mask.MDH_RTFEEDBACK & mask.MDH_VOP)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.vop.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('vop', None)
+
+            # MDH_PHASCOR
+            isCurrScan = mask.MDH_PHASCOR & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.phasecor.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('phasecor', None)
+
+            # refscanPC
+            isCurrScan = mask.MDH_PHASCOR & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.refscanPC.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('refscanPC', None)
+
+            # phasestab MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
+                & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.phasestab.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('phasestab', None)
+
+            # refscanPS MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_PHASESTABSCAN & ~mask.MDH_REFPHASESTABSCAN)\
+                & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.refscan_phasestab.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('refscan_phasestab', None)
+
+            # phasestabRef0 MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
+                & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('phasestab_ref0', None)
+
+            # refscanPSRef0 MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_REFPHASESTABSCAN & ~mask.MDH_PHASESTABSCAN)\
+                & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.refscan_phasestab_ref0.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('refscan_phasestab_ref0', None)
+
+            # phasestabRef1 MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
+                & (~mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('phasestab_ref1', None)
+
+            # refscanPSRef1 MDH_PHASESTABSCAN
+            isCurrScan = (mask.MDH_REFPHASESTABSCAN & mask.MDH_PHASESTABSCAN)\
+                & (mask.MDH_PATREFSCAN | mask.MDH_PATREFANDIMASCAN)
+            isCurrScan = isCurrScan.astype(bool)
+            if isCurrScan.any():
+                currTwixObj.refscan_phasestab_ref1.readMDH(mdh, filePos, isCurrScan)
+            else:
+                currTwixObj.pop('refscan_phasestab_ref1', None)
+
+            if isEOF:
+                # recover from read error
+                for keys in currTwixObj:
+                    if keys != 'hdr':
+                        currTwixObj[keys].tryAndFixLastMdh()
+            else:
+                for keys in currTwixObj:
+                    if keys != 'hdr':
+                        currTwixObj[keys].clean()
 
         twix_obj.append(myAttrDict(currTwixObj))
 
