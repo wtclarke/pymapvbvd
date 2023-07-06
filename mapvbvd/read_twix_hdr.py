@@ -77,6 +77,10 @@ class twix_hdr(AttrDict):
 def parse_ascconv(buffer):
     # print(buffer)
     vararray = re.finditer(r'(?P<name>\S*)\s*=\s*(?P<value>\S*)\n', buffer)
+
+    # for splitting array name and index (if present)
+    re_array_name_index = re.compile(r'(?P<name>\w+)(?:\[(?P<ix>[0-9]+)\])?')
+
     # print(vararray)
     mrprot = AttrDict()
     for v in vararray:
@@ -86,15 +90,9 @@ def parse_ascconv(buffer):
             value = v.group('value')
 
         # now split array name and index (if present)
-        vvarray = re.finditer(r'(?P<name>\w+)(\[(?P<ix>[0-9]+)\])?', v.group('name'))
-
-        currKey = []
-        for vv in vvarray:
-            # print(vv.group('name'))
-            currKey.append(vv.group('name'))
-            if vv.group('ix') is not None:
-                # print(vv.group('ix'))
-                currKey.append(vv.group('ix'))
+        vvarray = re_array_name_index.findall(v.group('name'))
+        # for each match, take all non-empty components to form the final key
+        currKey = (x for y in vvarray for x in y if x)
 
         mrprot.update({tuple(currKey): value})
 
@@ -103,28 +101,32 @@ def parse_ascconv(buffer):
 
 def parse_xprot(buffer):
     xprot = {}
-    tokens = re.finditer(r'<Param(?:Bool|Long|String)\."(\w+)">\s*{([^}]*)', buffer)
-    tokensDouble = re.finditer(r'<ParamDouble\."(\w+)">\s*{\s*(<Precision>\s*[0-9]*)?\s*([^}]*)', buffer)
-    alltokens = chain(tokens, tokensDouble)
+
+    # captured groups are 1: name, 2: value. param type isn't that useful, since integer values are often stored in string types
+    alltokens = re.finditer(r'<Param(?:Bool|Long|String|Double)\."(\w+)">\s*{\s*(?:<Precision>\s*[0-9]*)?\s*([^}]*)', buffer)
 
     for t in alltokens:
-        # print(t.group(1))
-        # print(t.group(2))
         name = t.group(1)
+        value = t.group(2).strip()
 
-        value = re.sub(r'("*)|( *<\w*> *[^\n]*)', '', t.groups()[-1])
-        # value = re.sub(r'\s*',' ',value)
-        # for some bonkers reason this inserts whitespace between all the letters!
-        # Just look for other whitespace that \s usually does.
-        value = re.sub(r'[\t\n\r\f\v]*', '', value.strip())
-        try:
-            value = float(value)
-        except ValueError:
-            pass
+        # clean up the obtained values, removing quotes, nested tags and repeated whitespace.
+        # (skipped for really lengthy values: most likely nested ASCCONV blocks which aren't handled meaningfully anyway)
+        if len(value) < 5000:
+            value = parse_xprot.re_quotes_and_nested_tags.sub('', value).strip()
+            value = parse_xprot.re_repeated_whitespace.sub(' ', value)
+
+            try:
+                value = float(value)
+            except ValueError:
+                pass
 
         xprot.update({name: value})
 
     return xprot
+
+
+parse_xprot.re_repeated_whitespace = re.compile(r'\s+')
+parse_xprot.re_quotes_and_nested_tags = re.compile(r'("+)|( *<\w*> *[^\n]*)')
 
 
 def parse_buffer(buffer):
@@ -163,9 +165,12 @@ def read_twix_hdr(fid, prot):
 
         fid.seek(len(bufname) - 9, 1)
         buflen = np.fromfile(fid, dtype=np.uint32, count=1)
-        tmpBuff = np.fromfile(fid, dtype=np.uint8, count=buflen[0])
-        buffer = ''.join([chr(item) for item in tmpBuff])
-        buffer = re.sub(r'\n\s*\n', '', buffer)
+
+        # read entire buffer, as series of bytes
+        buffer = fid.read(buflen[0]).decode('latin-1', errors='ignore')
+        # trim whitespace and drop blank lines
+        buffer = '\n'.join([l2 for l2 in [line.strip() for line in buffer.split('\n')] if l2])
+
         prot.update({bufname: parse_buffer(buffer)})
 
     rstraj = None
