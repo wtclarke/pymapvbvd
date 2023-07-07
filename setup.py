@@ -27,6 +27,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     install_requires=install_requires,
+    extras_require={"tests": ['pytest', ]},
     license_file='LICENSE',
     classifiers=[
         "Programming Language :: Python :: 3",
