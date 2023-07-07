@@ -411,7 +411,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
             # print(f'Scan {s + 1}/{NScans}, read all mdhs:')
 
             mdh_blob, filePos, isEOF = loop_mdh_read(fid, version, NScans, s, measOffset[s],
-                                                     measLength[s], print_prog=not quiet)  # uint8; size: [ byteMDH  Nmeas ]
+                                                     measLength[s], print_prog=not quiet)
+            # uint8; size: [ byteMDH  Nmeas ]
 
             cPos = filePos[-1]
             # filePos = filePos[:-1]

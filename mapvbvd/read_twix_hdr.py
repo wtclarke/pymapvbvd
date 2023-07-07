@@ -1,7 +1,6 @@
 import re
 import numpy as np
 from scipy.integrate import cumtrapz
-from itertools import chain
 
 from mapvbvd._attrdict import AttrDict
 
@@ -102,15 +101,19 @@ def parse_ascconv(buffer):
 def parse_xprot(buffer):
     xprot = {}
 
-    # captured groups are 1: name, 2: value. param type isn't that useful, since integer values are often stored in string types
-    alltokens = re.finditer(r'<Param(?:Bool|Long|String|Double)\."(\w+)">\s*{\s*(?:<Precision>\s*[0-9]*)?\s*([^}]*)', buffer)
+    # captured groups are 1: name, 2: value.
+    # param type isn't that useful, since integer values are often stored in string types
+    alltokens = re.finditer(
+        r'<Param(?:Bool|Long|String|Double)\."(\w+)">\s*{\s*(?:<Precision>\s*[0-9]*)?\s*([^}]*)',
+        buffer
+    )
 
     for t in alltokens:
         name = t.group(1)
         value = t.group(2).strip()
 
         # clean up the obtained values, removing quotes, nested tags and repeated whitespace.
-        # (skipped for really lengthy values: most likely nested ASCCONV blocks which aren't handled meaningfully anyway)
+        # Skipped for really lengthy values: most likely nested ASCCONV blocks which aren't handled meaningfully anyway
         if len(value) < 5000:
             value = parse_xprot.re_quotes_and_nested_tags.sub('', value).strip()
             value = parse_xprot.re_repeated_whitespace.sub(' ', value)
