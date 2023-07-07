@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.3 (Tuesday 7th July 2023)
+-----------------------------
+- Performance enhancements and error checking for corrupted files. With thanks to Alex Craven
+- Removed unnecessary build and test requirements from the `requirements.yml` file.
+
 0.5.2 (Tuesday 10th January 2023)
 ---------------------------------
 - Updated build dependencies (for pyproject.toml build)
