@@ -170,7 +170,32 @@ def read_twix_hdr(fid, prot):
         buflen = np.fromfile(fid, dtype=np.uint32, count=1)
 
         # read entire buffer, as series of bytes
-        buffer = fid.read(buflen[0]).decode('latin-1', errors='ignore')
+        buffer = fid.read(buflen[0])
+
+        if len(bufname) == 0:
+            warningString =\
+                '\nEmpty buffer name at file offset %d: file may be corrupt or unsupported\n' % (
+                    fid.tell(),
+                )
+        elif len(buffer) < buflen[0]:
+            warningString =\
+                '\nRead only %d of expected %d bytes (offset %d); file may be corrupt or unsupported\n' % (
+                    len(buffer),
+                    buflen[0],
+                    fid.tell()
+                )
+        else:
+            warningString = None
+
+        if warningString:
+            # warning only, in keeping with mapVBVD behaviour; could alternatively raise EOFError
+            import warnings
+            warningString += 'Header read stopped prematurely.\n'
+            warnings.warn(warningString)
+            break
+
+        buffer = buffer.decode('latin-1', errors='ignore')
+
         # trim whitespace and drop blank lines
         buffer = '\n'.join([l2 for l2 in [line.strip() for line in buffer.split('\n')] if l2])
 
@@ -178,7 +203,7 @@ def read_twix_hdr(fid, prot):
 
     rstraj = None
     # read gridding info
-    if 'alRegridMode' in prot.Meas:
+    if hasattr(prot, 'Meas') and 'alRegridMode' in prot.Meas:
         regrid_mode = int(prot.Meas.alRegridMode.split(' ')[0])
         if regrid_mode > 1:
             ncol = int(prot.Meas.alRegridDestSamples.split(' ')[0])
