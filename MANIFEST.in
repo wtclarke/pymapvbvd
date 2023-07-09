@@ -2,3 +2,4 @@ include requirements.yml
 include versioneer.py
 include mapvbvd/_version.py
 include LICENSE
+include CHANGELOG.md
