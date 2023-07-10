@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.4 (Monday 10th July 2023)
+-----------------------------
+- Fix issue intorduced in `0.5.3` where tests were vendored as a top level package.
+- This changelog is now included in the sdist.
+
 0.5.3 (Tuesday 7th July 2023)
 -----------------------------
 - Performance enhancements and error checking for corrupted files. With thanks to Alex Craven
