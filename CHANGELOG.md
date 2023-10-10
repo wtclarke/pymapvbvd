@@ -1,5 +1,9 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.5 (Tuesday 10th October 2023)
+---------------------------------
+- Suppress warning `RuntimeWarning: invalid value encountered in cast`.
+
 0.5.4 (Monday 10th July 2023)
 -----------------------------
 - Fix issue intorduced in `0.5.3` where tests were vendored as a top level package.
