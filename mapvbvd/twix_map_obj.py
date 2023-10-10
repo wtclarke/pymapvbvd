@@ -550,7 +550,9 @@ class twix_map_obj:
 
         # now calc. inverse index (page table: virtual to physical addresses)
         # indices of lines that are not measured are zero
-        ixToRaw = np.full(self.fullSize[2:].prod().astype(int), np.nan, dtype=int)
+        # Suppress <__array_function__ internals>:200: RuntimeWarning: invalid value encountered in cast
+        with np.errstate(invalid='ignore'):
+            ixToRaw = np.full(self.fullSize[2:].prod().astype(int), np.nan, dtype=int)
 
         for i, itt in enumerate(ixToTarget):
             ixToRaw[itt] = i
