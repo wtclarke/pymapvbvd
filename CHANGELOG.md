@@ -3,6 +3,7 @@ This document contains the pymapvbvd release history in reverse chronological or
 0.5.5 (Tuesday 10th October 2023)
 ---------------------------------
 - Suppress warning `RuntimeWarning: invalid value encountered in cast`.
+- Python 3.7 is no longer supported.
 
 0.5.4 (Monday 10th July 2023)
 -----------------------------
