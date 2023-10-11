@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.6 (Wednesday 11th October 2023)
+-----------------------------------
+- Fixed issue with large files on Windows. Thanks to FrankZijlstra for reporting.
+- Fixed subtle bug with precisely sized files interacting with memory chunking size. Thanks to FrankZijlstra for reporting. 
+
 0.5.5 (Tuesday 10th October 2023)
 ---------------------------------
 - Suppress warning `RuntimeWarning: invalid value encountered in cast`.
