@@ -682,16 +682,16 @@ class twix_map_obj:
 
     def readData(self, mem, cIxToTarg=None, cIxToRaw=None, selRange=None, selRangeSz=None, outSize=None):
 
-        mem = mem.astype(int)
+        mem = mem.astype(np.int64)
         if outSize is None:
             if selRange is None:
-                selRange = [np.arange(0, self.dataSize[0]).astype(int),
-                            np.arange(0, self.dataSize[1]).astype(int)]
+                selRange = [np.arange(0, self.dataSize[0]).astype(np.int64),
+                            np.arange(0, self.dataSize[1]).astype(np.int64)]
             else:
-                selRange[0] = np.arange(0, self.dataSize[0]).astype(int)
-                selRange[1] = np.arange(0, self.dataSize[0]).astype(int)
+                selRange[0] = np.arange(0, self.dataSize[0]).astype(np.int64)
+                selRange[1] = np.arange(0, self.dataSize[0]).astype(np.int64)
 
-            outSize = np.concatenate((self.dataSize[0:2], mem.shape)).astype(int)
+            outSize = np.concatenate((self.dataSize[0:2], mem.shape)).astype(np.int64)
             selRangeSz = outSize
             cIxToTarg = np.arange(0, selRangeSz[2])
             cIxToRaw = cIxToTarg
@@ -708,15 +708,17 @@ class twix_map_obj:
 
         # These parameters were copied for speed in matlab, but just duplicate to keep code similar in python
         szScanHeader = self.freadInfo.szScanHeader
-        readSize = self.freadInfo.sz.astype(int)
-        readShape = self.freadInfo.shape.astype(int)
-        readCut = self.freadInfo.cut.astype(int)
-        keepOS = np.concatenate([list(range(int(self.NCol / 4))), list(range(int(self.NCol * 3 / 4), int(self.NCol)))])
+        readSize = self.freadInfo.sz.astype(np.int64)
+        readShape = self.freadInfo.shape.astype(np.int64)
+        readCut = self.freadInfo.cut.astype(np.int64)
+        keepOS = np.concatenate([
+            list(range(np.int64(self.NCol / 4))),
+            list(range(np.int64(self.NCol * 3 / 4), np.int64(self.NCol)))])
 
         bIsReflected = self.IsReflected[cIxToRaw]
         bRegrid = self.regrid and self.rstrj.size > 1
         # slicedata = self.slicePos[cIxToRaw, :]
-        ro_shift = self.ROoffcenter[cIxToRaw] * int(not self.ignoreROoffcenter)
+        ro_shift = self.ROoffcenter[cIxToRaw] * np.int64(not self.ignoreROoffcenter)
         # %SRY store information about raw data correction
         # bDoRawDataCorrect = this.arg.doRawDataCorrect;
         # bIsRawDataCorrect = this.IsRawDataCorrect( cIxToRaw );
@@ -747,7 +749,7 @@ class twix_map_obj:
         if bRegrid:
             v1 = np.array(range(1, selRangeSz[1] * blockSz + 1))
             rsTrj = [self.rstrj, v1]
-            trgTrj = np.linspace(np.min(self.rstrj), np.max(self.rstrj), int(self.NCol))
+            trgTrj = np.linspace(np.min(self.rstrj), np.max(self.rstrj), np.int64(self.NCol))
             trgTrj = [trgTrj, v1]
 
         # counter for proper scaling of averages/segments
@@ -797,7 +799,7 @@ class twix_map_obj:
                 # remove MDH data from block:
                 block = block[readCut, :, :]
 
-                ix = np.arange(1 + k - blockCtr, k + 1, dtype=int)  # +1 so that it goes to k
+                ix = np.arange(1 + k - blockCtr, k + 1, dtype=np.int64)  # +1 so that it goes to k
                 if blockCtr != blockSz:
                     block = block[:, :, 0:blockCtr]
 
@@ -906,7 +908,7 @@ class twix_map_obj:
                         blockInit = np.concatenate((blockInit, blockInit), axis=2)
                     else:
                         # regression; reset size and lock it
-                        blockSz = np.maximum(blockSz / 2, 1).astype(int)
+                        blockSz = np.maximum(blockSz / 2, 1).astype(np.int64)
                         blockInit = blockInit[:, :, :blockSz]
                         doLockblockSz = True
 

@@ -140,7 +140,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         n_acq = n_acq + 1
 
         # grow arrays in batches
-        if n_acq > szBlob:
+        if n_acq >= szBlob:
             grownArray = np.zeros((mdh_blob.shape[0], allocSize),
                                   dtype=np.uint8)  # pylint: disable=E1136  # pylint/issues/3139
             mdh_blob = np.concatenate((mdh_blob, grownArray), axis=1)
@@ -160,7 +160,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
 
         cPos = cPos + int(ulDMALength)
 
-    if isEOF or n_acq == len(filePos):
+    if isEOF:
         n_acq = n_acq - 1  # ignore the last attempt
     # import pdb; pdb.set_trace()
     filePos[n_acq] = cPos
