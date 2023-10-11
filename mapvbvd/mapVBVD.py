@@ -108,7 +108,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
             data_u8[3] = get_bit(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
             tmp = data_u8[0:4]
             tmp.dtype = np.uint32
-            ulDMALength = float(tmp)
+            ulDMALength = tmp.item()
 
             if (ulDMALength == 0) or (bitMask & bit_0):
                 cPos = cPos + ulDMALength
@@ -122,7 +122,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
             data_u8[3] = get_bit(data_u8[3], 0)  # ubit24: keep only 1 bit from the 4th byte
             tmp = data_u8[0:4]
             tmp.dtype = np.uint32
-            ulDMALength = float(tmp)
+            ulDMALength = tmp.item()
             cPos = cPos + ulDMALength
             continue
 
@@ -340,8 +340,8 @@ def mapVBVD(filename, quiet=False, **kwargs):
         measOffset = np.zeros(NScans, dtype=np.uint64)
         measLength = np.zeros(NScans, dtype=np.uint64)
         for k in range(NScans):
-            measOffset[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0)
-            measLength[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0)
+            measOffset[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0).item()
+            measLength[k] = np.fromfile(fid, dtype=np.uint64, count=1, offset=0).item()
             fid.seek(152 - 16, 1)
 
     else:
