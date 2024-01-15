@@ -153,6 +153,14 @@ class twix_map_obj:
             raise Exception('No trajectory for regridding available')
         self.regrid = bval
 
+    @property
+    def flagDisableReflect(self):
+        return self.disableReflect
+    
+    @flagDisableReflect.setter
+    def flagDisableReflect(self, val):
+        self.disableReflect = val
+
     # TODO: flagDoRawDataCorrect
     @property
     def flagDoRawDataCorrect(self):
@@ -181,6 +189,7 @@ class twix_map_obj:
         self.averageSets = kwargs.get('averageSets', False)
         self.ignoreSeg = kwargs.get('ignoreSeg', False)
         self.squeeze = kwargs.get('squeeze', False)
+        self.disableReflect = kwargs.get('disableReflect', False)
 
         self.dType = dataType.lower()
         self.fname = fname
@@ -806,8 +815,9 @@ class twix_map_obj:
                 # if  bDoRawDataCorrect && bIsRawDataCorrect(k): WTC: not implemented yet
 
                 # reflect fids when necessary
-                isRefl = np.where(bIsReflected[ix])[0]
-                block[:, :, isRefl] = block[-1::-1, :, isRefl]
+                if not self.disableReflect:
+                    isRefl = np.where(bIsReflected[ix])[0]
+                    block[:, :, isRefl] = block[-1::-1, :, isRefl]
 
                 if bRegrid:
                     # correct for readout shifts
