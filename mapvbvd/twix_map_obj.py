@@ -156,7 +156,7 @@ class twix_map_obj:
     @property
     def flagDisableReflect(self):
         return self.disableReflect
-    
+
     @flagDisableReflect.setter
     def flagDisableReflect(self, val):
         self.disableReflect = val
