@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.5.7 (Wednesday 31st January 2024)
+-----------------------------------
+- Added flag to disable line reflection. Thanks to FrankZijlstra for contributing.
+- Fixed depreciation warning (Issue 42). Thanks to MusicInMyBrain for reporting. 
+
 0.5.6 (Wednesday 11th October 2023)
 -----------------------------------
 - Fixed issue with large files on Windows. Thanks to FrankZijlstra for reporting.
