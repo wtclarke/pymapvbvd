@@ -1,5 +1,11 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.6.0 (Friday 28th June 2024)
+-----------------------------
+- Dropped support for Python 3.8
+- Testing for Python 3.12
+- Compatibility with Numpy version 2
+
 0.5.7 (Wednesday 31st January 2024)
 -----------------------------------
 - Added flag to disable line reflection. Thanks to FrankZijlstra for contributing.
