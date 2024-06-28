@@ -1,6 +1,6 @@
 import re
 import numpy as np
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 
 from mapvbvd._attrdict import AttrDict
 
@@ -231,7 +231,7 @@ def read_twix_hdr(fid, prot):
 
             # make sure that gr_adc is always positive (rstraj needs to be strictly monotonic)
             gr_adc = np.maximum(gr_adc, 1e-4)
-            rstraj = (np.append(0, cumtrapz(gr_adc)) - ncol / 2) / np.sum(gr_adc)
+            rstraj = (np.append(0, cumulative_trapezoid(gr_adc)) - ncol / 2) / np.sum(gr_adc)
             rstraj -= np.mean(rstraj[int(ncol / 2) - 1:int(ncol / 2) + 1])
             # scale rstraj by kmax (only works if all slices have same FoV!!!)
             # TODO: these are examples of the keys not arranged correctly

@@ -132,9 +132,7 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         #          the "DMA length"
         #              if mdh.ulPackBit
         #          it seems that the packbit is not always set correctly
-        tmp = data_u8[dmaIdx]
-        tmp.dtype = np.uint16
-        NCol_NCha = tmp  # was float [ushSamplesInScan  ushUsedChannels]
+        NCol_NCha = data_u8[dmaIdx].view(np.uint16).astype(int)
         ulDMALength = dmaOff + (8 * NCol_NCha[0] + dmaSkip) * NCol_NCha[1]
 
         n_acq = n_acq + 1
