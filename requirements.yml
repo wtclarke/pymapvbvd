@@ -1,7 +1,7 @@
 dependencies:
  - numpy==2.*
  - tqdm
- - scipy==1.14.*
+ - scipy==1.13.*
  - matplotlib
  - h5py
  - six
