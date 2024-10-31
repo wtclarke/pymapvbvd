@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.6.1 (Thursday 31st October 2024)
+----------------------------------
+- Testing on Python 3.13
+- Changed scipy version requirements.
+
 0.6.0 (Friday 28th June 2024)
 -----------------------------
 - Dropped support for Python 3.8
