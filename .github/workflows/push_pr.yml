@@ -39,5 +39,5 @@ jobs:
         shell: bash -l {0}
         run: |
             conda install pytest
-            pip install .
-            pytest -k "not orientation" tests
+            pip install --no-deps .
+            pytest -m "not orientation" tests
