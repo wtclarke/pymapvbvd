@@ -16,6 +16,25 @@ def complex_interp(src_grid, xi, yi, z):
     return zz_r + 1j * zz_i
 
 
+def _store_unique_block(out, block, indices, count_ave):
+    """Store a block with unique output indices."""
+    if indices.size and np.all(np.diff(indices) == 1):
+        target = slice(int(indices[0]), int(indices[-1]) + 1)
+        count = count_ave[:, :, target]
+        count += 1
+        if (count == 1).all():
+            out[:, :, target] = block
+        else:
+            out[:, :, target] += block
+        return
+
+    count_ave[:, :, indices] += 1
+    if (count_ave[:, :, indices] == 1).all():
+        out[:, :, indices] = block
+    else:
+        out[:, :, indices] += block
+
+
 class twix_map_obj:
 
     @property
@@ -875,8 +894,9 @@ class twix_map_obj:
                 cur1stDim = selRange[0].size
                 cur2ndDim = selRange[1].size
                 cur3rdDim = block.shape[2]
-                block = block[selRange[0][:, np.newaxis], selRange[1][np.newaxis, :], :]\
-                    .reshape((cur1stDim, cur2ndDim, cur3rdDim))
+                if block.shape[:2] != (cur1stDim, cur2ndDim):
+                    block = block[selRange[0][:, np.newaxis], selRange[1][np.newaxis, :], :]\
+                        .reshape((cur1stDim, cur2ndDim, cur3rdDim))
 
                 toSort = cIxToTarg[ix]
                 II = np.argsort(toSort)
@@ -890,15 +910,10 @@ class twix_map_obj:
                 idx1 = sortIdx[~isDupe]  # acquired once in this block
                 idxN = sortIdx[isDupe]  # acquired multiple times
 
-                count_ave[:, :, idx1] += 1
-
                 if idxN.size == 0:
-                    # no duplicates
-                    if (count_ave[:, :, idx1] == 1).all():  # first acquisition of this line
-                        out[:, :, idx1] = block  # fast
-                    else:
-                        out[:, :, idx1] = out[:, :, idx1] + block  # slow
+                    _store_unique_block(out, block, idx1, count_ave)
                 else:
+                    count_ave[:, :, idx1] += 1
                     out[:, :, idx1] = out[:, :, idx1] + block[:, :, ~isDupe]  # slower
 
                     block = block[:, :, isDupe]
