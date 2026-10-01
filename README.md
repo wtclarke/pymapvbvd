@@ -12,6 +12,17 @@ Python port of the Matlab mapVBVD tool for reading Siemens raw data 'twix' (.dat
 or
 `pip install pymapvbvd`
 
+## Development
+Install [Pixi](https://pixi.sh), then run `pixi install` to create the development environment.
+
+```bash
+pixi run lint
+pixi run test
+pixi run build
+```
+
+Run the test suite with a specific supported development Python version using `pixi run -e py313 test` or `pixi run -e py314 test`.
+
 ## Use
 
 I have attempted to replicate the syntax of the original matlab code, but there are a few differences due to differing variable types.

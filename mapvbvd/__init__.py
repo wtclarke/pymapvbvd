@@ -1,4 +1,8 @@
+from importlib.metadata import PackageNotFoundError, version
+
 from mapvbvd.mapVBVD import mapVBVD
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+
+try:
+    __version__ = version("pyMapVBVD")
+except PackageNotFoundError:
+    __version__ = "0+unknown"
