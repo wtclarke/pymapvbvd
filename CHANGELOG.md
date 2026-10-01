@@ -4,6 +4,7 @@ This document contains the pymapvbvd release history in reverse chronological or
 ----------------------------------
 - Move to `pixi` local build
 - Remove extra deepcopy
+- Fix issues with overflow of uint16 for very large acquisition - Thanks to @chaithyagr
 
 0.6.1 (Thursday 31st October 2024)
 ----------------------------------
