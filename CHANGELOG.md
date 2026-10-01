@@ -1,5 +1,10 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.7.0 (Thursday 1st October 2026)
+----------------------------------
+- Move to `pixi` local build
+- Remove extra deepcopy
+
 0.6.1 (Thursday 31st October 2024)
 ----------------------------------
 - Testing on Python 3.13
