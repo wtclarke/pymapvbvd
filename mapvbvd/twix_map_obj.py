@@ -792,7 +792,7 @@ class twix_map_obj:
                 raw = raw.reshape(readShape)
                 isBrokenRead = True  # remember it and bail out later
 
-            block[:, :, blockCtr, None] = copy.deepcopy(raw).reshape(np.append(readShape, 1))
+            block[:, :, blockCtr, None] = raw.reshape(np.append(readShape, 1))
             # fast serial storage in a cache array - this is probably all very dependent on whether I've got things
             # contiguous in memory. I highly doubt that I have on this first pass. WTC
             blockCtr += 1
