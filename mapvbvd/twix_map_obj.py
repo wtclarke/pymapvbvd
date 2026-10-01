@@ -429,7 +429,7 @@ class twix_map_obj:
         self.NIde = np.max(self.Ide) + 1
         if int(self.NLin) == 1<<16:
             if len(self.Lin) > self.NLin // self.NRep:
-                logging.warning('NLin is at maximum value for uint16, this may cause issues with indexing, trrying to fix')
+                logging.warning('NLin is at maximum value for uint16, this may cause issues with indexing, attempting fix')
             self.NLin = len(self.Lin) // self.NRep
             self.Lin = np.arange(self.NLin)
         
