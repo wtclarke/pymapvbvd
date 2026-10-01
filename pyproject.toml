@@ -1,3 +1,73 @@
 [build-system]
-requires = ["setuptools", "versioneer", "pyyaml"]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyMapVBVD"
+description = "Python twix file reader"
+readme = "README.md"
+requires-python = ">3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Will Clarke", email = "william.clarke@ndcn.ox.ac.uk" }]
+dynamic = ["version"]
+dependencies = [
+    "numpy>=1.26",
+    "tqdm",
+    "scipy>=1.13",
+    "matplotlib",
+    "h5py",
+    "six",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/wtclarke/pymapvbvd"
+
+[project.optional-dependencies]
+tests = ["pytest"]
+dev = ["build", "flake8", "flake8-pyproject", "pytest"]
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
+
+[tool.setuptools_scm]
+fallback_version = "0+unknown"
+
+[tool.flake8]
+ignore = ["E221", "W503", "W504"]
+per-file-ignores = ["__init__.py:F401"]
+exclude = [".git", "__pycache__", ".vscode"]
+max-line-length = 120
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.dependencies]
+python = ">3.11,<3.15"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
+
+[tool.pixi.pypi-dependencies]
+pymapvbvd = { path = ".", editable = true, extras = ["dev"] }
+
+[tool.pixi.environments]
+default = { features = [], solve-group = "python" }
+py313 = { features = ["py313"], solve-group = "py313" }
+py314 = { features = ["py314"], solve-group = "py314" }
+
+[tool.pixi.tasks]
+lint = "flake8 mapvbvd"
+test = "pytest -m 'not orientation' tests"
+build = "python -m build"
