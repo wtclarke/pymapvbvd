@@ -39,6 +39,10 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         warnings.warn(f'Software version "{version}" is not supported.')
 
     cPos = fid.tell()
+    # Bound reads by both the RAID measurement and the actual file.
+    fid.seek(0, 2)
+    data_end = min(fid.tell(), int(measOffset) + int(measLength))
+    fid.seek(cPos)
     n_acq = 0
     allocSize = 4096
     ulDMALength = byteMDH
@@ -81,6 +85,8 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         #           ... whether it is the last one (MDH_ACQEND)
         #         evalMDH() contains the correct and readable code for all mdh entries.
         try:
+            if cPos + byteMDH > data_end:
+                raise EOFError
             # read only the MDH part
             # Note, mhdStart is NEGATIVE offset relative to end of this block
             fid.seek(int(ulDMALength) + mdhStart, 1)
@@ -135,6 +141,11 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
         NCol_NCha = data_u8[dmaIdx].view(np.uint16).astype(int)
         ulDMALength = dmaOff + (8 * NCol_NCha[0] + dmaSkip) * NCol_NCha[1]
 
+        # A complete header alone does not imply a complete ADC payload.
+        if cPos + int(ulDMALength) > data_end:
+            isEOF = True
+            break
+
         n_acq = n_acq + 1
 
         # grow arrays in batches
@@ -158,10 +169,8 @@ def loop_mdh_read(fid, version, Nscans, scan, measOffset, measLength, print_prog
 
         cPos = cPos + int(ulDMALength)
 
-    if isEOF:
-        n_acq = n_acq - 1  # ignore the last attempt
-    # import pdb; pdb.set_trace()
-    filePos[n_acq] = cPos
+    # Only complete acquisitions increment n_acq. EOF while attempting the
+    # NEXT header must not discard the preceding complete acquisition.
 
     # discard overallocation:
 

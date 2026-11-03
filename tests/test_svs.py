@@ -36,8 +36,10 @@ def test_ve():
 def test_vb_broken():
     with pytest.warns(UserWarning):
         twixObj = mapVBVD(test_data_vb_broken, quiet=True)
-    assert np.allclose(twixObj.image.fullSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 97, 1, 1, 1, 1, 1, 1])
-    assert np.allclose(twixObj.image.sqzSize, [2048, 32, 97])
+    # The 98th acquisition is complete and ends exactly at EOF (no ACQEND).
+    assert twixObj.image.memPos[-1] + 32 * (128 + 4096 * 8) == op.getsize(test_data_vb_broken)
+    assert np.allclose(twixObj.image.fullSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 98, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj.image.sqzSize, [2048, 32, 98])
 
     keys = twixObj.search_header_for_keys(('sTXSPEC', 'asNucleusInfo'), top_lvl='MeasYaps')
     assert ('sTXSPEC', 'asNucleusInfo', '0', 'tNucleus') in keys['MeasYaps']
