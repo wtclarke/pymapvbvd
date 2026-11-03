@@ -24,9 +24,9 @@ def test_flagRemoveOS():
     with pytest.warns(UserWarning):
         twixObj = mapVBVD(test_data_vb_broken, quiet=False)
     twixObj.image.flagRemoveOS = False
-    assert np.allclose(twixObj.image.dataSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 97, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj.image.dataSize, [4096, 32, 1, 1, 1, 1, 1, 1, 1, 98, 1, 1, 1, 1, 1, 1])
     twixObj.image.flagRemoveOS = True
-    assert np.allclose(twixObj.image.dataSize, [2048, 32, 1, 1, 1, 1, 1, 1, 1, 97, 1, 1, 1, 1, 1, 1])
+    assert np.allclose(twixObj.image.dataSize, [2048, 32, 1, 1, 1, 1, 1, 1, 1, 98, 1, 1, 1, 1, 1, 1])
 
 
 def test_flagIgnoreSeg_flagDoAverage():
