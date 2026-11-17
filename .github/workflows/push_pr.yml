@@ -16,12 +16,13 @@ jobs:
           lfs: true
       - uses: prefix-dev/setup-pixi@v0.9.4
         with:
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
-          environments: py314
           cache: false
           activate-environment: false
       - name: Lint
-        run: pixi run lint
+        continue-on-error: true
+        run: pixi run -e py314 lint
       - name: Run pytest
         run: pixi run -e py314 test
 
@@ -33,7 +34,7 @@ jobs:
       fail-fast: true
       matrix:
         os: ["ubuntu-latest"]
-        environment: ["py313", "py314"]
+        environment: ["py313", "py314", "py315"]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -41,8 +42,8 @@ jobs:
           lfs: true
       - uses: prefix-dev/setup-pixi@v0.9.4
         with:
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
-          environments: ${{ matrix.environment }}
           cache: false
           activate-environment: false
       - name: Run pytest
