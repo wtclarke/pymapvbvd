@@ -34,7 +34,7 @@ jobs:
       fail-fast: true
       matrix:
         os: ["ubuntu-latest"]
-        environment: ["py313", "py314", "py315"]
+        environment: ["py312", "py313", "py315"]
     steps:
       - uses: actions/checkout@v6
         with:
