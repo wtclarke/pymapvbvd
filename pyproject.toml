@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Operating System :: OS Independent",
 ]
 
@@ -51,7 +52,10 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.dependencies]
-python = ">3.11,<3.15"
+python = ">3.11,<3.16"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
 
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
@@ -59,15 +63,22 @@ python = "3.13.*"
 [tool.pixi.feature.py314.dependencies]
 python = "3.14.*"
 
+[tool.pixi.feature.py315.dependencies]
+python = "3.15.*"
+pkg-config = "*"
+hdf5 = "*"
+
 [tool.pixi.pypi-dependencies]
 pymapvbvd = { path = ".", editable = true, extras = ["dev"] }
 
 [tool.pixi.environments]
 default = { features = [], solve-group = "python" }
+py312 = { features = ["py312"], solve-group = "py312" }
 py313 = { features = ["py313"], solve-group = "py313" }
 py314 = { features = ["py314"], solve-group = "py314" }
+py315 = { features = ["py315"], solve-group = "py315" }
 
 [tool.pixi.tasks]
 lint = "flake8 mapvbvd"
-test = "pytest -m 'not orientation' tests"
+test = "pytest tests"
 build = "python -m build"

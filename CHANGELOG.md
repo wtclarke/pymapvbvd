@@ -1,5 +1,11 @@
 This document contains the pymapvbvd release history in reverse chronological order.
 
+0.7.1 (Tuesday 17th November 2026)
+----------------------------------
+- Fixed parsing of Twix headers in non-Unix-style EOL characters (see [Issue #50](https://github.com/wtclarke/pymapvbvd/issues/50))
+- Preserve complete final ADC acquisitions at EOF
+- Added Python 3.15 support
+
 0.7.0 (Thursday 1st October 2026)
 ----------------------------------
 - Move to `pixi` local build

@@ -75,7 +75,7 @@ class twix_hdr(AttrDict):
 
 def parse_ascconv(buffer):
     # print(buffer)
-    vararray = re.finditer(r'(?P<name>\S*)\s*=\s*(?P<value>\S*)\n', buffer)
+    vararray = re.finditer(r'(?P<name>\S*)\s*=\s*(?P<value>\S*)(?:\r\n|\n|\r)', buffer)
 
     # for splitting array name and index (if present)
     re_array_name_index = re.compile(r'(?P<name>\w+)(?:\[(?P<ix>[0-9]+)\])?')
@@ -133,7 +133,7 @@ parse_xprot.re_quotes_and_nested_tags = re.compile(r'("+)|( *<\w*> *[^\n]*)')
 
 
 def parse_buffer(buffer):
-    reASCCONV = re.compile(r'### ASCCONV BEGIN[^\n]*\n(.*)\s### ASCCONV END ###', re.DOTALL)
+    reASCCONV = re.compile(r'### ASCCONV BEGIN[^\r\n]*[\r\n](.*)\s### ASCCONV END ###', re.DOTALL)
     # print(f'buffer = {buffer[0:10]}')
     # import pdb; pdb.set_trace()
 
@@ -195,6 +195,7 @@ def read_twix_hdr(fid, prot):
             break
 
         buffer = buffer.decode('latin-1', errors='ignore')
+        buffer = buffer.replace('\r\n', '\n').replace('\r', '\n')
 
         # trim whitespace and drop blank lines
         buffer = '\n'.join([l2 for l2 in [line.strip() for line in buffer.split('\n')] if l2])
